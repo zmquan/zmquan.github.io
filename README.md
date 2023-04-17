@@ -15,6 +15,7 @@ npm install -g hexo-cli
 npm install hexo
 npm install hexo-deployer-git -save
 npm install hexo-renderer-swig --save
+npm install hexo-generator-search
 hexo n
 hexo g
 hexo d
