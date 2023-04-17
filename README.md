@@ -8,6 +8,7 @@ git config --global user.email "zmquan666@gmail.com"
 git init
 git branch -m code
 git remote add origin  git@github.com:zmquan/zmquan.github.io.git
+git remote remove origin
 git pull origin code
 
 npm install -g hexo-cli 
