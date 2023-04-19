@@ -7,4 +7,4 @@ tags:
 
 <!--more-->
 
-![click me](/img/yosemite.jpg)
+![click me](http://img.zmq100.cn/wallpaper/Yosemite.jpg)
