@@ -8,3 +8,4 @@ tags:
 <!--more-->
 
 点击下载: [click me](http://img.zmq100.cn/wallpaper/Yosemite.jpg)
+
