@@ -24,8 +24,10 @@
     "hexo-renderer-stylus": "^2.1.0",
     "hexo-renderer-swig": "^2.0.0",
     "hexo-server": "^3.0.0",
+    "hexo-tag-aplayer": "^3.0.4",
     "hexo-theme-landscape": "^0.0.3",
     "markdown-it-checkbox": "^1.1.0",
+    "markdown-it-emoji": "^2.0.2",
     "markdown-it-expandable": "^1.0.2",
     "markdown-it-imsize": "^2.0.1"
   }
