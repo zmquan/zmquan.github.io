@@ -52,7 +52,7 @@ language_switcher: false
 
 footer:
   # Specify the date when the site was setup. If not defined, current year will be used.
-  #since: 2015
+  # since: 2020
 
   # Icon between year and copyright info.
   icon:
@@ -67,7 +67,7 @@ footer:
   copyright:
 
   # Powered by Hexo & NexT
-  powered: true
+  powered: false
 
   # Beian ICP and gongan information for Chinese users. See: https://beian.miit.gov.cn, http://www.beian.gov.cn
   beian:
@@ -117,13 +117,14 @@ darkmode: false
 # External url should start with http:// or https://
 menu:
   home: / || fa fa-home
-  #about: /about/ || fa fa-user
-  #tags: /tags/ || fa fa-tags
-  #categories: /categories/ || fa fa-th
   archives: /archives/ || fa fa-archive
+  categories: /categories/ || fa fa-th
+  tags: /tags/ || fa fa-tags
+  #about: /about/ || fa fa-user
   #schedule: /schedule/ || fa fa-calendar
   #sitemap: /sitemap.xml || fa fa-sitemap
   #commonweal: /404/ || fa fa-heartbeat
+
 
 # Enable / Disable menu icons / item badges.
 menu_settings:
@@ -177,7 +178,7 @@ site_state: true
 # Key is the link label showing to end users.
 # Value before `||` delimiter is the target permalink, value after `||` delimiter is the name of Font Awesome icon.
 social:
-  #GitHub: https://github.com/yourname || fab fa-github
+  GitHub: https://github.com/zmquan || fab fa-github
   #E-Mail: mailto:yourname@gmail.com || fa fa-envelope
   #Weibo: https://weibo.com/yourname || fab fa-weibo
   #Google: https://plus.google.com/yourname || fab fa-google
@@ -208,11 +209,11 @@ links:
 toc:
   enable: true
   # Automatically add list number to toc.
-  number: true
+  number: false
   # If true, all words will placed on next lines if header width longer then sidebar width.
-  wrap: false
+  wrap: true
   # If true, all level of TOC in a post will be displayed, rather than the activated part of it.
-  expand_all: false
+  expand_all: true
   # Maximum heading depth of generated toc.
   max_depth: 6
 
@@ -995,3 +996,47 @@ vendors:
 css: css
 js: js
 images: images
+
+# Markdown-it config
+markdown:
+  preset: "default"
+  render:
+    html: true
+    xhtmlOut: false
+    langPrefix: "language-"
+    breaks: true
+    linkify: true
+    typographer: true
+    quotes: "“”‘’"
+  enable_rules:
+  disable_rules:
+  plugins:
+    - markdown-it-abbr
+    - markdown-it-cjk-breaks
+    - markdown-it-deflist
+    - markdown-it-emoji
+    - markdown-it-footnote
+    - markdown-it-ins
+    - markdown-it-mark
+    - markdown-it-sub
+    - markdown-it-sup
+    - markdown-it-checkbox
+    - markdown-it-imsize
+    - markdown-it-expandable
+    - name: markdown-it-container
+      options: success
+    - name: markdown-it-container
+      options: tips
+    - name: markdown-it-container
+      options: warning
+    - name: markdown-it-container
+      options: danger
+  anchors:
+    level: 2
+    collisionSuffix: ""
+    permalink: false
+    permalinkClass: "header-anchor"
+    permalinkSide: "left"
+    permalinkSymbol: "¶"
+    case: 0
+    separator: "-"

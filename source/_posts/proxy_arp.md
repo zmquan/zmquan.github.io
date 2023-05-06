@@ -1,9 +1,15 @@
 ---
 title: proxy_arp test
 date: 2023-04-17 16:05:47
-tags:
+categories: 
+- 技术文档
+tags: 
+- arp
+- test
 ---
-```sh
+简单的proxy_arp test 
+<!--more-->
+```bash
 ip link add veth1 type veth peer name eth1
 ip netns add ns1
 ip link set eth1 netns ns1
@@ -15,8 +21,6 @@ ip link set veth1 up
 ip route add 10.1.1.10 dev veth1 scope link
 ip route add 10.1.1.10 via 172.12.1.11 dev eth0
 echo 1 > /proc/sys/net/ipv4/conf/veth1/proxy_arp
-
-
 
 ip link add veth2 type veth peer name eth2                       
 ip netns add ns2                                                 

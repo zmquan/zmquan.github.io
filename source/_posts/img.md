@@ -1,11 +1,14 @@
 ---
-title: img
+title: My Wallpaper
 date: 2023-04-18 20:36:18
-tags:
+top: 1
+categories: 
+- 图片
+tags: 
+- 壁纸
 ---
-<div align="center"> 点开下载Yosemite </div>
-
+![](http://img.zmq100.cn/wallpaper/Yosemite.jpg)
+<div align="center"> 点开下载 </div>
 <!--more-->
 
-点击下载: [click me](http://img.zmq100.cn/wallpaper/Yosemite.jpg)
-
+点击下载: [Click Me](http://img.zmq100.cn/wallpaper/Yosemite.jpg)
