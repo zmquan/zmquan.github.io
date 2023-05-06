@@ -7,7 +7,7 @@ categories:
 tags: 
 - 壁纸
 ---
-![](http://img.zmq100.cn/wallpaper/Yosemite.jpg)
+![](/img/Yosemite.jpg)
 <div align="center"> 点开下载 </div>
 <!--more-->
 
