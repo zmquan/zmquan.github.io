@@ -8,7 +8,7 @@ tags:
 - Grafana
 - kubeskoop
 ---
-### 前言
+## 前言
 > 目的是介绍一下默认安装方式进行快速安装kubeskoop，细节可以参考安装地址官网介绍, 作用也不做过多介绍了
 
 当然社区有kubeskoop+Prometheus+Grafana的整个的bundle的manifests，直接apply就可以看到效果，然后import json到Grafana : [kubeskoop dashboard](https://github.com/alibaba/kubeskoop/blob/main/deploy/resource/kubeskoop-exporter-dashboard.json).
@@ -407,7 +407,7 @@ level=info ts=2023-05-07T09:48:42.804818624Z caller=reloader.go:374 msg="Reload 
 ts=2023-05-07T08:09:18.741Z caller=main.go:1246 level=info msg="Completed loading of configuration file" filename=/etc/config/prometheus.yml totalDuration=3.276064ms db_storage=1.652µs remote_storage=1.007µs web_handler=444ns query_engine=1.173µs scrape=662.222µs scrape_sd=739.882µs notify=69.047µs notify_sd=191.773µs rules=132.322µs tracing=2.817µs
 ```
 
-### 访问Prometheus-server的svc查看Target
+### 访问prom查看Targets
 查看是否识别target
 ```
 # 通过如下做一下svc的映射： kubectl port-forward svc/[service-name] -n [namespace] [external-port]:[internal-port]
@@ -427,7 +427,7 @@ http://192.168.0.5:9102/metrics	UP
 ## Grafana
 > How to install and run Grafana on Kubernetes (K8S). It uses Kubernetes manifests for the setup:  [Grafana](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/)
 
-### helm 安装
+### Helm安装
 ```shell
 $ sudo helm repo add grafana https://grafana.github.io/helm-charts
 $ sudo helm repo update
