@@ -27,7 +27,7 @@ kubectl create -f  \
 |:-|:-|:-|
 |kubeskoop|Helm 0.1.1 / App: 0.1.1|[kubeskoop](https://github.com/alibaba/kubeskoop/tree/main/deploy/helm)|
 |Prometheus|Helm 22.2.0 / App: v2.43.0|[promtheus](https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus/README.md)|
-|Grafana|Helm 6.56.1 / App: 9.5.0|[Grafana](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/)|
+|Grafana|Helm 6.56.1 / App: 9.5.0|[Grafana](https://github.com/grafana/helm-charts/blob/main/charts/grafana/README.md)|
 |helm3|v3.11.1|[Helm](https://github.com/helm/helm/releases/tag/v3.11.1)|
 |Kubernetes|v1.20.11|-|
 
