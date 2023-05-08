@@ -8,21 +8,21 @@ tags:
 ---
 
 ## 安装
-1、下载适用于您的操作系统的程序包：[点击官网](https://developer.hashicorp.com/terraform/downloads)
+1、 下载适用于您的操作系统的程序包：[点击官网](https://developer.hashicorp.com/terraform/downloads)
 
-2、 解压复制到对于的bin目录
+2、 解压复制到对应的/usr/bin目录
 
 3、 执行查看
+
 ```bash
 $ terraform version
-Usage: terraform [global options] <subcommand> [args]
 Terraform v1.4.4
 on linux_amd64
 ```
 <!--more-->
 
 ## 配置
-保存 providers 到统一的位置， 这样就不用每次都下载，都会做软连接
+保存 providers 到统一的位置， 这样就会先找本地缓存做软连接
 ```bash
 $ cat << EOF | tee > ~/.terraformrc
 plugin_cache_dir   = "$HOME/.terraform.d/plugin-cache"
@@ -49,7 +49,8 @@ $ sudo terraform --help
 ```
 
 ## 配置main.tf
-```text
+
+```json
 terraform {
   required_providers {
     kubernetes = {
