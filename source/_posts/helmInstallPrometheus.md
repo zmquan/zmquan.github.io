@@ -1293,10 +1293,17 @@ prometheus-pushgateway:
 ```
 </details>
 
-## 设置pvc
+## 设置server的pvc
 
 ```bash
 $ sudo vim prometheus/values.yaml
+```
+
+```yaml
+server:
+  ## Prometheus server container name
+  ##
+  name: server
 ...
   persistentVolume:
     ## If true, Prometheus server will create/use a Persistent Volume Claim
@@ -1345,7 +1352,7 @@ $ sudo vim prometheus/values.yaml
     ##   GKE, AWS & OpenStack)
     ##
     # storageClass: "-"     # 2. 如果没有默认存储类， 那么设置自己的存储类
-
+    storageClass: "nas-sc" 
     ## Prometheus server data Persistent Volume Binding Mode
     ## If defined, volumeBindingMode: <volumeBindingMode>
     ## If undefined (the default) or set to null, no volumeBindingMode spec is
@@ -1382,7 +1389,9 @@ $ sudo vim prometheus/values.yaml
 
 ```bash
 $ sudo vim prometheus/values.yaml
-...
+```
+
+```yaml
 alertmanager:
   ## If false, alertmanager will not be installed
   ##
@@ -1414,19 +1423,18 @@ prometheus-pushgateway:
 ```bash
 $ sudo helm install --create-namespace --namespace monitoring  prometheus ./prometheus --debug
 install.go:194: [debug] Original chart version: ""
-install.go:211: [debug] CHART PATH: /media/prometheus
+install.go:211: [debug] CHART PATH: /mnt/prometheus
 
 client.go:133: [debug] creating 1 resource(s)
-client.go:133: [debug] creating 23 resource(s)
+client.go:133: [debug] creating 15 resource(s)
 NAME: prometheus
-LAST DEPLOYED: Mon May  8 18:38:50 2023
+LAST DEPLOYED: Mon May  8 19:06:26 2023
 NAMESPACE: monitoring
 STATUS: deployed
 REVISION: 1
 TEST SUITE: None
 USER-SUPPLIED VALUES:
 {}
-
 ```
 
 <details>
@@ -1461,7 +1469,7 @@ alertmanager:
     name: configmap-reload
     resources: {}
   dnsConfig: {}
-  enabled: true
+  enabled: false
   extraArgs: {}
   extraEnv: []
   extraInitContainers: []
@@ -1528,6 +1536,7 @@ alertmanager:
   serviceAccount:
     annotations: {}
     create: true
+    name: null
   statefulSet:
     annotations: {}
   templates: {}
@@ -1805,7 +1814,7 @@ prometheus-node-exporter:
 prometheus-pushgateway:
   affinity: {}
   containerSecurityContext: {}
-  enabled: true
+  enabled: false
   extraArgs: []
   extraContainers: []
   extraInitContainers: []
@@ -1849,6 +1858,7 @@ prometheus-pushgateway:
   podAnnotations: {}
   podDisruptionBudget: {}
   podLabels: {}
+  priorityClassName: null
   readiness:
     enabled: true
     probe:
@@ -1873,6 +1883,7 @@ prometheus-pushgateway:
     type: ClusterIP
   serviceAccount:
     create: true
+    name: null
   serviceAccountLabels: {}
   serviceAnnotations:
     prometheus.io/probe: pushgateway
@@ -1947,7 +1958,7 @@ server:
   nodeSelector: {}
   persistentVolume:
     accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
     annotations: {}
     enabled: true
     existingClaim: ""
@@ -1955,6 +1966,7 @@ server:
     mountPath: /data
     size: 8Gi
     statefulSetNameOverride: null
+    storageClass: nas-sc
     subPath: ""
   podAnnotations: {}
   podDisruptionBudget:
@@ -2340,19 +2352,6 @@ serviceAccounts:
 HOOKS:
 MANIFEST:
 ---
-# Source: prometheus/charts/alertmanager/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-automountServiceAccountToken: true
----
 # Source: prometheus/charts/kube-state-metrics/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -2384,18 +2383,6 @@ metadata:
     app.kubernetes.io/instance: prometheus
     app.kubernetes.io/version: "1.5.0"
 ---
-# Source: prometheus/charts/prometheus-pushgateway/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    helm.sh/chart: prometheus-pushgateway-2.0.4
-    app.kubernetes.io/name: prometheus-pushgateway
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v1.5.1"
-    app.kubernetes.io/managed-by: Helm
-  name: prometheus-prometheus-pushgateway
----
 # Source: prometheus/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -2412,30 +2399,6 @@ metadata:
   namespace: monitoring
   annotations:
     {}
----
-# Source: prometheus/charts/alertmanager/templates/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-data:
-  alertmanager.yml: |
-    global: {}
-    receivers:
-    - name: default-receiver
-    route:
-      group_interval: 5m
-      group_wait: 10s
-      receiver: default-receiver
-      repeat_interval: 3h
-    templates:
-    - /etc/alertmanager/*.tmpl
 ---
 # Source: prometheus/templates/cm.yaml
 apiVersion: v1
@@ -2759,26 +2722,6 @@ data:
         - __meta_kubernetes_pod_phase
       scrape_interval: 5m
       scrape_timeout: 30s
-    alerting:
-      alertmanagers:
-      - kubernetes_sd_configs:
-          - role: pod
-        tls_config:
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_namespace]
-          regex: monitoring
-          action: keep
-        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
-          regex: prometheus
-          action: keep
-        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-          regex: alertmanager
-          action: keep
-        - source_labels: [__meta_kubernetes_pod_container_port_number]
-          regex: "9093"
-          action: keep
   recording_rules.yml: |
     {}
   rules: |
@@ -2800,7 +2743,8 @@ metadata:
   namespace: monitoring
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  storageClassName: "nas-sc"
   resources:
     requests:
       storage: "8Gi"
@@ -3048,50 +2992,6 @@ roleRef:
   kind: ClusterRole
   name: prometheus-server
 ---
-# Source: prometheus/charts/alertmanager/templates/services.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  type: ClusterIP
-  ports:
-    - port: 9093
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
----
-# Source: prometheus/charts/alertmanager/templates/services.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: prometheus-alertmanager-headless
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  clusterIP: None
-  ports:
-    - port: 9093
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
----
 # Source: prometheus/charts/kube-state-metrics/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -3145,30 +3045,6 @@ spec:
       name: metrics
   selector:
     app.kubernetes.io/name: prometheus-node-exporter
-    app.kubernetes.io/instance: prometheus
----
-# Source: prometheus/charts/prometheus-pushgateway/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    prometheus.io/probe: pushgateway
-  labels:
-    helm.sh/chart: prometheus-pushgateway-2.0.4
-    app.kubernetes.io/name: prometheus-pushgateway
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v1.5.1"
-    app.kubernetes.io/managed-by: Helm
-  name: prometheus-prometheus-pushgateway
-spec:
-  type: ClusterIP
-  ports:
-    - port: 9091
-      targetPort: 9091
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: prometheus-pushgateway
     app.kubernetes.io/instance: prometheus
 ---
 # Source: prometheus/templates/service.yaml
@@ -3368,67 +3244,6 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 5
 ---
-# Source: prometheus/charts/prometheus-pushgateway/templates/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    helm.sh/chart: prometheus-pushgateway-2.0.4
-    app.kubernetes.io/name: prometheus-pushgateway
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v1.5.1"
-    app.kubernetes.io/managed-by: Helm
-  name: prometheus-prometheus-pushgateway
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: prometheus-pushgateway
-      app.kubernetes.io/instance: prometheus
-  template:
-    metadata:
-      labels:
-        helm.sh/chart: prometheus-pushgateway-2.0.4
-        app.kubernetes.io/name: prometheus-pushgateway
-        app.kubernetes.io/instance: prometheus
-        app.kubernetes.io/version: "v1.5.1"
-        app.kubernetes.io/managed-by: Helm
-    spec:
-      serviceAccountName: prometheus-prometheus-pushgateway
-      containers:
-        - name: pushgateway
-          image: "prom/pushgateway:v1.5.1"
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: metrics
-              containerPort: 9091
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-          volumeMounts:
-            - name: storage-volume
-              mountPath: "/data"
-              subPath: ""
-      securityContext:
-        fsGroup: 65534
-        runAsNonRoot: true
-        runAsUser: 65534
-      volumes:
-        - name: storage-volume
-          emptyDir: {}
----
 # Source: prometheus/templates/deploy.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -3534,89 +3349,6 @@ spec:
         - name: storage-volume
           persistentVolumeClaim:
             claimName: prometheus-server
----
-# Source: prometheus/charts/alertmanager/templates/statefulset.yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: alertmanager
-      app.kubernetes.io/instance: prometheus
-  serviceName: prometheus-alertmanager-headless
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: alertmanager
-        app.kubernetes.io/instance: prometheus
-      annotations:
-        checksum/config: d503fab9ff089176c2945704a9b5bbf06b35d2cda266b4d564414f4eecab227d
-    spec:
-      automountServiceAccountToken: true
-      serviceAccountName: prometheus-alertmanager
-      securityContext:
-        fsGroup: 65534
-        runAsGroup: 65534
-        runAsNonRoot: true
-        runAsUser: 65534
-      containers:
-        - name: alertmanager
-          securityContext:
-            runAsGroup: 65534
-            runAsNonRoot: true
-            runAsUser: 65534
-          image: "quay.io/prometheus/alertmanager:v0.25.0"
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: status.podIP
-          args:
-            - --storage.path=/alertmanager
-            - --config.file=/etc/alertmanager/alertmanager.yml
-          ports:
-            - name: http
-              containerPort: 9093
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          resources:
-            {}
-          volumeMounts:
-            - name: config
-              mountPath: /etc/alertmanager
-            - name: storage
-              mountPath: /alertmanager
-      volumes:
-        - name: config
-          configMap:
-            name: prometheus-alertmanager
-  volumeClaimTemplates:
-    - metadata:
-        name: storage
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 2Gi
 
 NOTES:
 The Prometheus server can be accessed via port 80 on the following DNS name from within your cluster:
@@ -3628,13 +3360,6 @@ Get the Prometheus server URL by running these commands in the same shell:
   kubectl --namespace monitoring port-forward $POD_NAME 9090
 
 
-The Prometheus alertmanager can be accessed via port  on the following DNS name from within your cluster:
-prometheus-%!s(<nil>).monitoring.svc.cluster.local
-
-
-Get the Alertmanager URL by running these commands in the same shell:
-  export POD_NAME=$(kubectl get pods --namespace monitoring -l "app=prometheus,component=" -o jsonpath="{.items[0].metadata.name}")
-  kubectl --namespace monitoring port-forward $POD_NAME 9093
 #################################################################################
 ######   WARNING: Pod Security Policy has been disabled by default since    #####
 ######            it deprecated after k8s 1.25+. use                        #####
@@ -3645,19 +3370,21 @@ Get the Alertmanager URL by running these commands in the same shell:
 #################################################################################
 
 
-The Prometheus PushGateway can be accessed via port 9091 on the following DNS name from within your cluster:
-prometheus-prometheus-pushgateway.monitoring.svc.cluster.local
-
-
-Get the PushGateway URL by running these commands in the same shell:
-  export POD_NAME=$(kubectl get pods --namespace monitoring -l "app=prometheus-pushgateway,component=pushgateway" -o jsonpath="{.items[0].metadata.name}")
-  kubectl --namespace monitoring port-forward $POD_NAME 9091
 
 For more information on running Prometheus, visit:
 https://prometheus.io/
+
 ```
 </details>
 
+## 登录prometheus
+
+```bash
+#1. 通过如下做一下svc的映射： kubectl port-forward svc/[service-name] -n [namespace] [external-port]:[internal-port]
+$ sudo kubectl port-forward svc/prometheus-server -n monitoring 80:80 --address='0.0.0.0'
+
+# 2. 通过本地IP+80即可访问
+```
 
 ## 查看manifest
 
@@ -3668,19 +3395,6 @@ $ sudo helm get manifest prometheus --namespace monitoring
   <summary>点击展开查看manifest</summary>
 
 ```yaml
----
-# Source: prometheus/charts/alertmanager/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-automountServiceAccountToken: true
 ---
 # Source: prometheus/charts/kube-state-metrics/templates/serviceaccount.yaml
 apiVersion: v1
@@ -3713,18 +3427,6 @@ metadata:
     app.kubernetes.io/instance: prometheus
     app.kubernetes.io/version: "1.5.0"
 ---
-# Source: prometheus/charts/prometheus-pushgateway/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    helm.sh/chart: prometheus-pushgateway-2.0.4
-    app.kubernetes.io/name: prometheus-pushgateway
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v1.5.1"
-    app.kubernetes.io/managed-by: Helm
-  name: prometheus-prometheus-pushgateway
----
 # Source: prometheus/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -3741,30 +3443,6 @@ metadata:
   namespace: monitoring
   annotations:
     {}
----
-# Source: prometheus/charts/alertmanager/templates/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-data:
-  alertmanager.yml: |
-    global: {}
-    receivers:
-    - name: default-receiver
-    route:
-      group_interval: 5m
-      group_wait: 10s
-      receiver: default-receiver
-      repeat_interval: 3h
-    templates:
-    - /etc/alertmanager/*.tmpl
 ---
 # Source: prometheus/templates/cm.yaml
 apiVersion: v1
@@ -4088,26 +3766,6 @@ data:
         - __meta_kubernetes_pod_phase
       scrape_interval: 5m
       scrape_timeout: 30s
-    alerting:
-      alertmanagers:
-      - kubernetes_sd_configs:
-          - role: pod
-        tls_config:
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_namespace]
-          regex: monitoring
-          action: keep
-        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
-          regex: prometheus
-          action: keep
-        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-          regex: alertmanager
-          action: keep
-        - source_labels: [__meta_kubernetes_pod_container_port_number]
-          regex: "9093"
-          action: keep
   recording_rules.yml: |
     {}
   rules: |
@@ -4129,7 +3787,8 @@ metadata:
   namespace: monitoring
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  storageClassName: "nas-sc"
   resources:
     requests:
       storage: "8Gi"
@@ -4377,50 +4036,6 @@ roleRef:
   kind: ClusterRole
   name: prometheus-server
 ---
-# Source: prometheus/charts/alertmanager/templates/services.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  type: ClusterIP
-  ports:
-    - port: 9093
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
----
-# Source: prometheus/charts/alertmanager/templates/services.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: prometheus-alertmanager-headless
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  clusterIP: None
-  ports:
-    - port: 9093
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
----
 # Source: prometheus/charts/kube-state-metrics/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -4474,30 +4089,6 @@ spec:
       name: metrics
   selector:
     app.kubernetes.io/name: prometheus-node-exporter
-    app.kubernetes.io/instance: prometheus
----
-# Source: prometheus/charts/prometheus-pushgateway/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    prometheus.io/probe: pushgateway
-  labels:
-    helm.sh/chart: prometheus-pushgateway-2.0.4
-    app.kubernetes.io/name: prometheus-pushgateway
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v1.5.1"
-    app.kubernetes.io/managed-by: Helm
-  name: prometheus-prometheus-pushgateway
-spec:
-  type: ClusterIP
-  ports:
-    - port: 9091
-      targetPort: 9091
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: prometheus-pushgateway
     app.kubernetes.io/instance: prometheus
 ---
 # Source: prometheus/templates/service.yaml
@@ -4697,67 +4288,6 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 5
 ---
-# Source: prometheus/charts/prometheus-pushgateway/templates/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    helm.sh/chart: prometheus-pushgateway-2.0.4
-    app.kubernetes.io/name: prometheus-pushgateway
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v1.5.1"
-    app.kubernetes.io/managed-by: Helm
-  name: prometheus-prometheus-pushgateway
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: prometheus-pushgateway
-      app.kubernetes.io/instance: prometheus
-  template:
-    metadata:
-      labels:
-        helm.sh/chart: prometheus-pushgateway-2.0.4
-        app.kubernetes.io/name: prometheus-pushgateway
-        app.kubernetes.io/instance: prometheus
-        app.kubernetes.io/version: "v1.5.1"
-        app.kubernetes.io/managed-by: Helm
-    spec:
-      serviceAccountName: prometheus-prometheus-pushgateway
-      containers:
-        - name: pushgateway
-          image: "prom/pushgateway:v1.5.1"
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: metrics
-              containerPort: 9091
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /-/ready
-              port: 9091
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-          volumeMounts:
-            - name: storage-volume
-              mountPath: "/data"
-              subPath: ""
-      securityContext:
-        fsGroup: 65534
-        runAsNonRoot: true
-        runAsUser: 65534
-      volumes:
-        - name: storage-volume
-          emptyDir: {}
----
 # Source: prometheus/templates/deploy.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -4863,88 +4393,5 @@ spec:
         - name: storage-volume
           persistentVolumeClaim:
             claimName: prometheus-server
----
-# Source: prometheus/charts/alertmanager/templates/statefulset.yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: prometheus-alertmanager
-  labels:
-    helm.sh/chart: alertmanager-0.30.1
-    app.kubernetes.io/name: alertmanager
-    app.kubernetes.io/instance: prometheus
-    app.kubernetes.io/version: "v0.25.0"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: alertmanager
-      app.kubernetes.io/instance: prometheus
-  serviceName: prometheus-alertmanager-headless
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: alertmanager
-        app.kubernetes.io/instance: prometheus
-      annotations:
-        checksum/config: d503fab9ff089176c2945704a9b5bbf06b35d2cda266b4d564414f4eecab227d
-    spec:
-      automountServiceAccountToken: true
-      serviceAccountName: prometheus-alertmanager
-      securityContext:
-        fsGroup: 65534
-        runAsGroup: 65534
-        runAsNonRoot: true
-        runAsUser: 65534
-      containers:
-        - name: alertmanager
-          securityContext:
-            runAsGroup: 65534
-            runAsNonRoot: true
-            runAsUser: 65534
-          image: "quay.io/prometheus/alertmanager:v0.25.0"
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: status.podIP
-          args:
-            - --storage.path=/alertmanager
-            - --config.file=/etc/alertmanager/alertmanager.yml
-          ports:
-            - name: http
-              containerPort: 9093
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          resources:
-            {}
-          volumeMounts:
-            - name: config
-              mountPath: /etc/alertmanager
-            - name: storage
-              mountPath: /alertmanager
-      volumes:
-        - name: config
-          configMap:
-            name: prometheus-alertmanager
-  volumeClaimTemplates:
-    - metadata:
-        name: storage
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 2Gi
 ```
 </details>
