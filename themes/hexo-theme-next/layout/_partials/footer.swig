@@ -60,6 +60,8 @@
   </div>
 {%- endif %}
 
- <a href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> <img src="https://img.zmq100.cn/logo/又拍云_logo5.png" border="0" width="40" height="20"> </a> 
+ <a href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> 
+   <img src="https://img.zmq100.cn/logo/又拍云_logo5.png" border="0" width="60" height="30"> 
+</a> 
 
 {{- next_inject('footer') }}
