@@ -1,5 +1,5 @@
 ---
-title: helmInstallPrometheus
+title: Helm 安装prometheus
 date: 2023-05-08 18:48:06
 categories: 
 - 技术文档
