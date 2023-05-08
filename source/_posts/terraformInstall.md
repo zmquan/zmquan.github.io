@@ -19,6 +19,7 @@ Usage: terraform [global options] <subcommand> [args]
 Terraform v1.4.4
 on linux_amd64
 ```
+<!--more-->
 
 ## 配置
 保存 providers 到统一的位置， 这样就不用每次都下载，都会做软连接
