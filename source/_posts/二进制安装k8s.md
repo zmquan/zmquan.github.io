@@ -9,8 +9,8 @@ tags:
 ---
 
 
-## 一、准备环境
-### 1.1 规划
+## 准备环境
+### 规划
 |  软件   | 版本|
 |:-|:-|
 |操作系统|Alibaba Cloud Linux (Aliyun Linux) 2.1903 LTS (Hunting Beagle)|
@@ -28,7 +28,7 @@ tags:
 |k8s-node1	|192.168.18.24	|kubelet，kube-proxy，docker |
 
 
-### 1.2 操作系统初始化
+### 操作系统初始化
 
 ```bash
 # 关闭防火墙
@@ -89,7 +89,7 @@ yum install ntpdate -y
 ntpdate ntp.aliyun.com
 ```
 
-## 二. 部署ETCD
+## 部署ETCD
 
 |  节点名称   | IP  |
 |:-|:-|
@@ -97,16 +97,16 @@ ntpdate ntp.aliyun.com
 |etcd2|192.168.18.44|
 |etcd3|192.168.18.45|
 
-### 2.1 下载cfssl工具
+### 下载cfssl工具
 ```bash
 sudo wget -O /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.4/cfssl_1.6.4_linux_amd64
 sudo wget -O /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.6.4/cfssljson_1.6.4_linux_amd64
 sudo wget -O /usr/local/bin/cfssl-certinfo https://github.com/cloudflare/cfssl/releases/download/v1.6.4/cfssl-certinfo_1.6.4_linux_amd64
 chmod +x /usr/local/bin/cfssl*
 ```
-### 2.2 生成证书
+### 生成证书
 
-#### 2.2.1 自签证书颁发机构（CA）
+#### 自签证书颁发机构（CA）
 
 创建工作目录：
 ```
@@ -163,7 +163,7 @@ ls *pem
 ca-key.pem  ca.pem
 ```
 
-#### 2.2.2 使用自签CA签发Etcd HTTPS证书
+#### 使用自签CA签发Etcd HTTPS证书
 
 创建证书申请文件：
 ```
@@ -199,20 +199,20 @@ ls server*pem
 server-key.pem  server.pem
 ```
 
-### 2.3 从Github下载二进制文件
+### 从Github下载二进制文件
 下载地址：
 https://github.com/etcd-io/etcd/releases/download/v3.5.8/etcd-v3.5.8-linux-amd64.tar.gz
 
 
-### 2.4 部署Etcd集群
+### 部署Etcd集群
 以下在节点1上操作，为简化操作，待会将节点1生成的所有文件拷贝到节点2和节点3.
-#### 2.4.1 创建工作目录并解压二进制包
+#### 创建工作目录并解压二进制包
 ```
 mkdir /opt/etcd/{bin,cfg,ssl} -p
 tar zxvf etcd-v3.5.8-linux-amd64.tar.gz
 mv etcd-v3.5.8-linux-amd64/{etcd,etcdctl} /opt/etcd/bin/
 ```
-#### 2.4.1 创建etcd配置文件
+#### 创建etcd配置文件
 ```
 cat > /opt/etcd/cfg/etcd.conf << EOF
 #[Member]
@@ -238,7 +238,7 @@ EOF
 - ETCD_INITIAL_CLUSTER_TOKEN：集群Token
 - ETCD_INITIAL_CLUSTER_STATE：加入集群的当前状态，new是新集群，existing表示加入已有集群
 
-#### 2.4.3 systemd管理etcd
+#### systemd管理etcd
 ```
 cat > /usr/lib/systemd/system/etcd.service << EOF
 [Unit]
@@ -264,18 +264,18 @@ WantedBy=multi-user.target
 EOF
 ```
 
-#### 2.4.4 拷贝刚才生成的证书
+#### 拷贝刚才生成的证书
 ```
 cp ~/TLS/etcd/ca*pem ~/TLS/etcd/server*pem /opt/etcd/ssl/
 ```
-#### 2.4.5 启动并设置开机启动
+#### 启动并设置开机启动
 ```
 systemctl daemon-reload
 systemctl start etcd
 systemctl enable etcd
 ```
 
-#### 2.4.6 将上面节点1所有生成的文件拷贝到节点2和节点3
+#### 将上面节点1所有生成的文件拷贝到节点2和节点3
 ```
 scp -r /opt/etcd/ root@192.168.18.44:/opt/
 scp /usr/lib/systemd/system/etcd.service root@192.168.18.44:/usr/lib/systemd/system/
@@ -300,7 +300,7 @@ ETCD_INITIAL_CLUSTER_STATE="new"
 ```
 最后启动etcd并设置开机启动，同上。
 
-#### 2.4.7 查看集群状态
+#### 查看集群状态
 ```
 ETCDCTL_API=3 /opt/etcd/bin/etcdctl --cacert=/opt/etcd/ssl/ca.pem --cert=/opt/etcd/ssl/server.pem --key=/opt/etcd/ssl/server-key.pem --endpoints="https://192.168.18.43:2379,https://192.168.18.44:2379,https://192.168.18.45:2379" endpoint health
 
@@ -310,16 +310,16 @@ https://192.168.18.44:2379 is healthy: successfully committed proposal: took = 7
 ```
 如果输出上面信息，就说明集群部署成功。如果有问题第一步先看日志：/var/log/message 或 journalctl -u etcd
 
-## 三、安装Docker
+## 安装Docker
 下载地址： https://download.docker.com/linux/static/stable/x86_64/docker-19.03.15.tgz
 
 以下在所有节点操作。这里采用二进制安装，用yum安装也一样。
-### 3.1 解压二进制包
+### 解压二进制包
 ```
 tar zxvf docker-19.03.15.tgz
 mv docker/* /usr/bin
 ```
-### 3.2 systemd管理docker
+### systemd管理docker
 ```
 cat > /usr/lib/systemd/system/docker.service << EOF
 [Unit]
@@ -345,7 +345,7 @@ WantedBy=multi-user.target
 EOF
 ```
 
-### 3.3 创建配置文件
+### 创建配置文件
 ```
 sudo mkdir -p /etc/docker
 sudo tee /etc/docker/daemon.json <<-'EOF'
@@ -356,18 +356,18 @@ EOF
 ```
 
 
-### 3.4 启动并设置开机启动
+### 启动并设置开机启动
 ```
 sudo systemctl daemon-reload
 sudo systemctl restart docker
 sudo systemctl enable docker
 ```
 
-## 四、部署Master Node
+## 部署Master Node
 
-### 4.1 生成kube-apiserver证书
+### 生成kube-apiserver证书
 
-#### 4.1.1 自签证书颁发机构（CA）
+#### 自签证书颁发机构（CA）
 ```
 cd ~/TLS/k8s
 cat > ca-config.json << EOF
@@ -482,7 +482,7 @@ EOF
 cfssl gencert -ca=front-proxy-ca.pem -ca-key=front-proxy-ca-key.pem -config=ca-config.json -profile=kubernetes  front-proxy-client-csr.json | cfssljson -bare front-proxy-client
 ```
 
-#### 4.1.2 使用自签CA签发kube-apiserver HTTPS证书
+#### 使用自签CA签发kube-apiserver HTTPS证书
 创建证书申请文件：
 ```
 cd ~/TLS/k8s
@@ -530,10 +530,10 @@ ls server*pem
 server-key.pem  server.pem
 ```
 
-### 4.2 从Github下载二进制文件
+### 从Github下载二进制文件
 下载地址： https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#server-binaries
 注：打开链接你会发现里面有很多包，下载一个server包就够了，包含了Master和Worker Node二进制文件。
-### 4.3 解压二进制包
+### 解压二进制包
 ```
 mkdir -p /opt/kubernetes/{bin,cfg,ssl,logs} 
 tar zxvf kubernetes-server-linux-amd64.tar.gz
@@ -541,8 +541,8 @@ cd kubernetes/server/bin
 cp kube-apiserver kube-scheduler kube-controller-manager /opt/kubernetes/bin
 cp kubectl /usr/bin/
 ```
-### 4.4 部署kube-apiserver
-#### 4.4.1 创建配置文件
+### 部署kube-apiserver
+#### 创建配置文件
 ```
 cat > /opt/kubernetes/cfg/kube-apiserver.conf << EOF
 KUBE_APISERVER_OPTS="--logtostderr=false \\
@@ -648,12 +648,12 @@ spec:
 - –tls-xxx-file：apiserver https证书
 - –etcd-xxxfile：连接Etcd集群证书
 - –audit-log-xxx：审计日志
-#### 4.4.2 拷贝刚才生成的证书
+#### 拷贝刚才生成的证书
 把刚才生成的证书拷贝到配置文件中的路径：
 ```
 cp ~/TLS/k8s/ca*pem ~/TLS/k8s/server*pem /opt/kubernetes/ssl/
 ```
-#### 4.4.3 启用 TLS Bootstrapping 机制
+#### 启用 TLS Bootstrapping 机制
 TLS Bootstraping：Master apiserver启用TLS认证后，Node节点kubelet和kube-proxy要与kube-apiserver进行通信，必须使用CA签发的有效证书才可以，当Node节点很多时，这种客户端证书颁发需要大量工作，同样也会增加集群扩展复杂度。为了简化流程，Kubernetes引入了TLS bootstraping机制来自动颁发客户端证书，kubelet会以一个低权限用户自动向apiserver申请证书，kubelet的证书由apiserver动态签署。所以强烈建议在Node上使用这种方式，目前主要用于kubelet，kube-proxy还是由我们统一颁发一个证书。
 TLS bootstraping 工作流程：
  
@@ -670,7 +670,7 @@ token也可自行生成替换：
 head -c 16 /dev/urandom | od -An -t x | tr -d ' '
 764498073a1328de0809fa6be3ab687b
 ```
-#### 4.4.4 systemd管理apiserver
+#### systemd管理apiserver
 ```
 cat > /usr/lib/systemd/system/kube-apiserver.service << EOF
 [Unit]
@@ -685,14 +685,14 @@ WantedBy=multi-user.target
 EOF
 ```
 
-#### 4.4.5 启动并设置开机启动
+#### 启动并设置开机启动
 ```
 systemctl daemon-reload
 systemctl start kube-apiserver
 systemctl enable kube-apiserver
 ```
 
-#### 4.4.6 创建集群的admin的kubeconfig证书
+#### 创建集群的admin的kubeconfig证书
 创建证书申请文件：
 ```
 cd ~/TLS/k8s
@@ -733,13 +733,13 @@ kubectl config set-context admin@kubernetes --cluster=kubernetes --user=admin
 kubectl config use-context admin@kubernetes
 ```
 
-#### 4.4.7 授权kubelet-bootstrap用户允许请求证书
+#### 授权kubelet-bootstrap用户允许请求证书
 ```
 kubectl create clusterrolebinding kubelet-bootstrap \
 --clusterrole=system:node-bootstrapper \
 --user=kubelet-bootstrap
 ```
-#### 4.4.8 创建kubeconfig
+#### 创建kubeconfig
 
 创建bootstrap.kubeconfig：
 ```
@@ -814,8 +814,8 @@ users:
 ```
 
 
-### 4.5 部署kube-controller-manager
-#### 4.5.1 创建配置文件
+### 部署kube-controller-manager
+#### 创建配置文件
 ```
 cat > /opt/kubernetes/cfg/kube-controller-manager.conf << EOF
 KUBE_CONTROLLER_MANAGER_OPTS="--logtostderr=false \\
@@ -840,7 +840,7 @@ EOF
 - –leader-elect：当该组件启动多个时，自动选举（HA）
 - –cluster-signing-cert-file/–cluster-signing-key-file：自动为kubelet颁发证书的CA，与apiserver保持一致
 
-#### 4.5.2 systemd管理controller-manager
+#### systemd管理controller-manager
 ```
 cat > /usr/lib/systemd/system/kube-controller-manager.service << EOF
 [Unit]
@@ -855,16 +855,16 @@ WantedBy=multi-user.target
 EOF
 ```
 
-#### 4.5.3 启动并设置开机启动
+#### 启动并设置开机启动
 ```
 systemctl daemon-reload
 systemctl start kube-controller-manager
 systemctl enable kube-controller-manager
 ```
 
-### 4.6 部署kube-scheduler
+### 部署kube-scheduler
 
-#### 4.6.1 创建配置文件
+#### 创建配置文件
 ```
 cat > /opt/kubernetes/cfg/kube-scheduler.conf << EOF
 KUBE_SCHEDULER_OPTS="--logtostderr=false \
@@ -881,7 +881,7 @@ EOF
 - –master：通过本地非安全本地端口8080连接apiserver。
 - –leader-elect：当该组件启动多个时，自动选举（HA）
 
-#### 4.6.2 systemd管理scheduler
+#### systemd管理scheduler
 ```
 cat > /usr/lib/systemd/system/kube-scheduler.service << EOF
 [Unit]
@@ -896,14 +896,14 @@ WantedBy=multi-user.target
 EOF
 ```
 
-#### 4.6.3 启动并设置开机启动
+#### 启动并设置开机启动
 ```
 systemctl daemon-reload
 systemctl start kube-scheduler
 systemctl enable kube-scheduler
 ```
 
-#### 4.6.4 查看集群状态
+#### 查看集群状态
 所有组件都已经启动成功，通过kubectl工具查看当前集群组件状态：
 ```
 [root@k8s-master1 ~]# kubectl  get cs
@@ -918,9 +918,9 @@ etcd-2               Healthy   {"health":"true","reason":""}
 如上输出说明Master节点组件运行正常。
 
 
-## 五、部署Worker Node
+## 部署Worker Node
 
-### 5.1 创建工作目录并拷贝二进制文件
+### 创建工作目录并拷贝二进制文件
 在所有worker node创建工作目录：
 ```
 mkdir -p /opt/kubernetes/{bin,cfg,ssl,logs} 
@@ -932,8 +932,8 @@ cd kubernetes/server/bin
 scp -r  kubelet kube-proxy 192.168.18.24:/opt/kubernetes/bin  
 ```
 
-### 5.2 部署kubelet
-#### 5.2.1 创建配置文件
+### 部署kubelet
+#### 创建配置文件
 
 ```
 cat > /opt/kubernetes/cfg/kubelet.conf << EOF
@@ -957,7 +957,7 @@ EOF
 - –cert-dir：kubelet证书生成目录
 - –pod-infra-container-image：管理Pod网络容器的镜像
 
-#### 5.2.2 配置参数文件
+#### 配置参数文件
 ```
 cat > /opt/kubernetes/cfg/kubelet-config.yml << EOF
 kind: KubeletConfiguration
@@ -1003,13 +1003,13 @@ staticPodPath: /opt/kubernetes/manifests
 EOF
 ```
 
-#### 5.2.3 拷贝生成.kubeconfig文件
+#### 拷贝生成.kubeconfig文件
 
 ```
 scp  /opt/kubernetes/bootstrap.kubeconfig  192.168.18.24:/opt/kubernetes/cfg
 ```
 
-#### 5.2.4 systemd管理kubelet
+#### systemd管理kubelet
 ```
 cat > /usr/lib/systemd/system/kubelet.service << EOF
 [Unit]
@@ -1025,14 +1025,14 @@ WantedBy=multi-user.target
 EOF
 ```
 
-#### 5.2.5 启动并设置开机启动
+#### 启动并设置开机启动
 ```
 systemctl daemon-reload
 systemctl start kubelet
 systemctl enable kubelet
 ```
 
-#### 5.2.6 批准kubelet证书申请并加入集群
+#### 批准kubelet证书申请并加入集群
 1.查看kubelet证书请求
 ```
 [root@k8s-master1 ~]# kubectl get csr
@@ -1052,8 +1052,8 @@ k8s-node1   NotReady    <none>   3h32m   v1.22.17
 ```
 注：由于网络插件还没有部署，节点会没有准备就绪 NotReady
 
-### 5.3 部署kube-proxy
-### 5.3.1 创建配置文件
+### 部署kube-proxy
+### 创建配置文件
 ```
 cat > /opt/kubernetes/cfg/kube-proxy.conf << EOF
 KUBE_PROXY_OPTS="--logtostderr=false \\
@@ -1063,7 +1063,7 @@ KUBE_PROXY_OPTS="--logtostderr=false \\
 EOF
 ```
 
-### 5.3.2 配置参数文件
+### 配置参数文件
 ```
 cat > /opt/kubernetes/cfg/kube-proxy-config.yml << EOF
 kind: KubeProxyConfiguration
@@ -1077,7 +1077,7 @@ clusterCIDR: 10.96.0.0/12
 EOF
 ```
 
-### 5.3.3 生成kube-proxy.kubeconfig文件
+### 生成kube-proxy.kubeconfig文件
 
 1. 生成kube-proxy证书：
 ```
@@ -1136,7 +1136,7 @@ kubectl config use-context default --kubeconfig=/opt/kubernetes/cfg/kube-proxy.k
 scp  /opt/kubernetes/cfg/kube-proxy.kubeconfig 192.168.18.24:/opt/kubernetes/cfg/
 ```
 
-### 5.3.4 systemd管理kube-proxy
+### systemd管理kube-proxy
 ```
 cat > /usr/lib/systemd/system/kube-proxy.service << EOF
 [Unit]
@@ -1151,7 +1151,7 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 ```
-### 5.3.5 启动并设置开机启动
+### 启动并设置开机启动
 ```
 systemctl daemon-reload
 systemctl start kube-proxy
@@ -1159,11 +1159,11 @@ systemctl enable kube-proxy
 ```
 
 
-### 5.4 部署CNI网络
-#### 5.4.1 先准备好CNI二进制文件：
+### 部署CNI网络
+#### 先准备好CNI二进制文件：
 下载地址：https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz
 
-#### 5.4.2 解压二进制包并移动到默认工作目录：
+#### 解压二进制包并移动到默认工作目录：
 ```
 mkdir -p /opt/cni/bin
 tar zxvf cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
