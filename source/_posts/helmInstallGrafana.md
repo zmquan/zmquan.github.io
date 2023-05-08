@@ -1328,8 +1328,8 @@ $ sudo vim grafana/values.yaml
 ...
 persistence:
   type: pvc
-  enabled: true             # 1. 改成true
-  storageClassName: nas-sc  # 2. 改成集群已经存在的storageClassName， 自动生成pvc
+  enabled: true             # 1. 改成true,  如果没有默认的存储类那么需要做第二步
+  storageClassName: nas-sc  # 【自己选sc】2. 改成集群已经存在的storageClassName， 自动生成pvc
   # storageClassName: default
   accessModes:
     - ReadWriteOnce
@@ -1341,7 +1341,7 @@ persistence:
   ## Sub-directory of the PV to mount. Can be templated.
   # subPath: ""
   ## Name of an existing PVC. Can be templated.
-  # existingClaim:          # 【optional】2. 如果有自己的PVC，去掉注释填上pvc的名称，记得设置accessModes为ReadWriteOnce
+  # existingClaim:          # 【使用已有pvc】2. 如果有自己的PVC，去掉注释填上pvc的名称
   ## Extra labels to apply to a PVC.
   extraPvcLabels: {}
 
