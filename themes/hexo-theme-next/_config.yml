@@ -78,7 +78,7 @@ footer:
     # The full num of gongan beian.
     gongan_num:
     # The icon for gongan beian. See: http://www.beian.gov.cn/portal/download
-    gongan_icon_url:
+    gongan_icon_url: 
 
 # Creative Commons 4.0 International License.
 # See: https://creativecommons.org/share-your-work/licensing-types-examples
@@ -367,9 +367,9 @@ codeblock:
 back2top:
   enable: true
   # Back to top in sidebar.
-  sidebar: false
+  sidebar: true
   # Scroll percent label in b2t button.
-  scrollpercent: false
+  scrollpercent: true
 
 # Reading progress bar
 reading_progress:
@@ -391,7 +391,7 @@ bookmark:
 # `Follow me on GitHub` banner in the top-right corner.
 github_banner:
   enable: false
-  permalink: https://github.com/yourname
+  permalink: https://github.com/zmquan
   title: Follow me on GitHub
 
 
@@ -429,7 +429,7 @@ font:
   title:
     external: true
     family:
-    size:
+    size: 
 
   # Font settings for headlines (<h1> to <h6>).
   headings:
@@ -671,7 +671,7 @@ add_this_id:
 
 # Google Analytics
 google_analytics:
-  tracking_id: # <app_id>
+  tracking_id: G-F8NP37VR39
   # By default, NexT will load an external gtag.js script on your site.
   # If you only need the pageview feature, set the following option to true to get a better performance.
   only_pageview: false
@@ -1023,14 +1023,6 @@ markdown:
     - markdown-it-checkbox
     - markdown-it-imsize
     - markdown-it-expandable
-    - name: markdown-it-container
-      options: success
-    - name: markdown-it-container
-      options: tips
-    - name: markdown-it-container
-      options: warning
-    - name: markdown-it-container
-      options: danger
   anchors:
     level: 2
     collisionSuffix: ""
