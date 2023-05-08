@@ -83,7 +83,12 @@ REVISION: 1
 TEST SUITE: None
 USER-SUPPLIED VALUES:
 {}
+```
 
+<details>
+  <summary>展开查看部署debug</summary>
+
+```yaml
 COMPUTED VALUES:
 appName: kubeskoop-exporter
 config:
@@ -288,6 +293,8 @@ spec:
         - name: bpfdir
           emptyDir: {}
 ```
+</details>
+
 ### 查看
 正常运行就ok了
 
@@ -442,9 +449,15 @@ LAST DEPLOYED: Sun May  7 18:30:34 2023
 NAMESPACE: kubeskoop
 STATUS: deployed
 REVISION: 1
-USER-SUPPLIED VALUES:
 {}
+```
 
+<details>
+  <summary>展开查看部署debug</summary>
+  
+```yaml
+{}
+USER-SUPPLIED VALUES:
 COMPUTED VALUES:
 admin:
   existingSecret: ""
@@ -1161,6 +1174,7 @@ NOTES:
 #################################################################################
 
 ```
+</details>
 
 ### 获取grafana的svc映射访问
 
