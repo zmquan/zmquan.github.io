@@ -1159,11 +1159,11 @@ systemctl enable kube-proxy
 ```
 
 
-### 部署CNI网络
-#### 先准备好CNI二进制文件：
+## 部署CNI网络
+### 先准备好CNI二进制文件：
 下载地址：https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz
 
-#### 解压二进制包并移动到默认工作目录：
+### 解压二进制包并移动到默认工作目录：
 ```
 mkdir -p /opt/cni/bin
 tar zxvf cni-plugins-linux-amd64-v1.2.0.tgz -C /opt/cni/bin
