@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 8.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.zmq100.cn","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="背景 Dockershim从Kubernetes 1.20版本开始废弃，计划在Kubernetes 1.24版本移除，所以目前1.24+的ACK集群只能containerd作为运行时，但是docker build构建的镜像是可以正常使用的， docker build 创建的镜像适用于任何 CRI 实现， 参考 Dockershim Removal FAQ 本文介绍一下containerd运行的节点">
+<meta property="og:type" content="article">
+<meta property="og:title" content="containerd 如何拉取镜像">
+<meta property="og:url" content="https://www.zmq100.cn/2023/06/19/containerdClient/index.html">
+<meta property="og:site_name" content="Zmq&#39;s Blog">
+<meta property="og:description" content="背景 Dockershim从Kubernetes 1.20版本开始废弃，计划在Kubernetes 1.24版本移除，所以目前1.24+的ACK集群只能containerd作为运行时，但是docker build构建的镜像是可以正常使用的， docker build 创建的镜像适用于任何 CRI 实现， 参考 Dockershim Removal FAQ 本文介绍一下containerd运行的节点">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-06-19T16:38:47.000Z">
+<meta property="article:modified_time" content="2025-12-18T06:48:21.000Z">
+<meta property="article:author" content="zmq">
+<meta property="article:tag" content="containerd">
+<meta property="article:tag" content="k8s">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.zmq100.cn/2023/06/19/containerdClient/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>containerd 如何拉取镜像 | Zmq's Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a81325a5a7afff52c3400dbde0eee2d6";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Zmq's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.zmq100.cn/2023/06/19/containerdClient/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/tx.jpg">
+      <meta itemprop="name" content="zmq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zmq's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          containerd 如何拉取镜像
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-19 16:38:47" itemprop="dateCreated datePublished" datetime="2023-06-19T16:38:47+00:00">2023-06-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-12-18 06:48:21" itemprop="dateModified" datetime="2025-12-18T06:48:21+00:00">2025-12-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3/" itemprop="url" rel="index"><span itemprop="name">技术文档</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="背景">背景</h2>
+<p>Dockershim从Kubernetes 1.20版本开始废弃，计划在Kubernetes 1.24版本移除，所以目前1.24+的ACK集群只能containerd作为运行时，但是docker build构建的镜像是可以正常使用的， docker build 创建的镜像适用于任何 CRI 实现， 参考 <a target="_blank" rel="noopener" href="https://kubernetes.io/blog/2022/02/17/dockershim-faq/">Dockershim Removal FAQ</a></p>
+<p>本文介绍一下containerd运行的节点上如何拉取公共镜像镜像，私有仓库镜像，便于排查containerd节点的免密或者自建镜像仓库的镜像</p>
+<h2 id="工具介绍">工具介绍</h2>
+<blockquote>
+<p>提示 很多时候我们都可以通过–help来查看工具都提供了哪些功能，因为版本之间直接可能存在兼容性问题</p>
+</blockquote>
+<p>本文对应的软件版本信息（基于阿里云的ACK）</p>
+<table>
+<thead>
+<tr>
+<th>ACK版本</th>
+<th>containerd版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1.24.6-aliyun.1</td>
+<td>containerd 1.6.20</td>
+</tr>
+</tbody>
+</table>
+<p>containerd 支持的客户端工具有很多， 比如 ctr、nerdctl、crictl、能调用cri接口的如kubelet等，其中是ctr、nerdctl是不支持CRI Plugin，比如镜像加速， 但是可以通过<code>--hosts-dir</code>的方式指定</p>
+<p>本文就通过介绍ctr和crictl, ACK 中默认安装的。</p>
+<span id="more"></span>
+<h2 id="镜像拉取">镜像拉取</h2>
+<blockquote>
+<p>提示 很多时候我们都可以通过–help来查看工具都提供了哪些功能，因为版本之间直接可能存在兼容性问题</p>
+</blockquote>
+<h3 id="ctr-工具拉取">ctr 工具拉取</h3>
+<p>ctr 拉取镜像需要加上 镜像的地址/名称空间/仓库名称:[tag] , 比如： <a target="_blank" rel="noopener" href="http://docker.io/library/busybox:latest">docker.io/library/busybox:latest</a></p>
+<blockquote>
+<p>contained 是区分名称空间的 kubelet拉取的镜像k8s.io名称空间, 如果一个服务安装了docker，那么docker 拉取的镜像保存到moby名称空间, 不加名称空间保存在默认的名称空间default， 所以无论是拉取还是运行服务需要使用–namespace 指定， 不写默认是default</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull --<span class="built_in">help</span></span><br><span class="line">NAME:</span><br><span class="line">   ctr images pull - pull an image from a remote</span><br><span class="line"></span><br><span class="line">USAGE:</span><br><span class="line">   ctr images pull [<span class="built_in">command</span> options] [flags] &lt;ref&gt;</span><br><span class="line"></span><br><span class="line">OPTIONS:</span><br><span class="line">   --skip-verify, -k                 skip SSL certificate validation</span><br><span class="line">   --plain-http                      allow connections using plain HTTP</span><br><span class="line">   --user value, -u value            user[:password] Registry user and password</span><br><span class="line">   --refresh value                   refresh token <span class="keyword">for</span> authorization server</span><br><span class="line">   --hosts-dir value                 Custom hosts configuration directory</span><br><span class="line">   --tlscacert value                 path to TLS root CA</span><br><span class="line">   --tlscert value                   path to TLS client certificate</span><br><span class="line">   --tlskey value                    path to TLS client key</span><br><span class="line">   --http-dump                       dump all HTTP request/responses when interacting with container registry</span><br><span class="line">   --http-trace                      <span class="built_in">enable</span> HTTP tracing <span class="keyword">for</span> registry interactions</span><br><span class="line">   --snapshotter value               snapshotter name. Empty value stands <span class="keyword">for</span> the default value. [<span class="variable">$CONTAINERD_SNAPSHOTTER</span>]</span><br><span class="line">   --label value                     labels to attach to the image</span><br><span class="line">   --platform value                  Pull content from a specific platform</span><br><span class="line">   --all-platforms                   pull content and metadata from all platforms</span><br><span class="line">   --all-metadata                    Pull metadata <span class="keyword">for</span> all platforms</span><br><span class="line">   --print-chainid                   Print the resulting image<span class="string">&#x27;s chain ID</span></span><br><span class="line"><span class="string">   --max-concurrent-downloads value  Set the max concurrent downloads for each pull (default: 0)</span></span><br></pre></td></tr></table></figure>
+<h4 id="拉取docker官方镜像">拉取docker官方镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull docker.io/library/busybox:latest</span><br><span class="line">docker.io/library/busybox:latest:                                                 resolved       |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">index-sha256:6e494387c901caf429c1bf77bd92fb82b33a68c0e19f6d1aa6a3ac8d27a7049d:    <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">manifest-sha256:1b0a26bd07a3d17473d8d8468bea84015e27f87124b283b91d781bce13f61370: <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">layer-sha256:71d064a1ac7d46bdcac82ea768aba4ebbe2a05ccbd3a4a82174c18cf51b67ab7:    <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">config-sha256:b539af69bc01c6c1c1eae5474a94b0abaab36b93c165c0cf30b7a0ab294135a3:   <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">elapsed: 4.8 s                                                                    total:  1.0 Mi (214.2 KiB/s)</span><br><span class="line">unpacking linux/amd64 sha256:6e494387c901caf429c1bf77bd92fb82b33a68c0e19f6d1aa6a3ac8d27a7049d...</span><br><span class="line"><span class="keyword">done</span>: 85.942512ms</span><br></pre></td></tr></table></figure>
+<h4 id="拉取非安全的镜像">拉取非安全的镜像</h4>
+<h5 id="http方式">http方式</h5>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull  192.168.66.42:5000/busybox:latest</span><br><span class="line">INFO[0000] trying next host                              error=<span class="string">&quot;failed to do request: Head \&quot;https://192.168.66.42:5000/v2/busybox/manifests/latest\&quot;: http: server gave HTTP response to HTTPS client&quot;</span> host=<span class="string">&quot;192.168.66.42:5000&quot;</span></span><br><span class="line">ctr: failed to resolve reference <span class="string">&quot;192.168.66.42:5000/busybox:latest&quot;</span>: failed to <span class="keyword">do</span> request: Head <span class="string">&quot;https://192.168.66.42:5000/v2/busybox/manifests/latest&quot;</span>: http: server gave HTTP response to HTTPS client</span><br></pre></td></tr></table></figure>
+<p>上面的报错可以看到， 默认ctr是不支持http，即明文拉取，可以通过<code>--plain-http</code> 参数声明明文拉取</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull  --plain-http 192.168.66.42:5000/busybox:latest</span><br><span class="line">192.168.66.42:5000/busybox:latest:                                               resolved       |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">manifest-sha256:62ffc2ed7554e4c6d360bce40bbcf196573dd27c4ce080641a2c59867e732dee: <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">layer-sha256:5cc84ad355aaa64f46ea9c7bbcc319a9d808ab15088a27209c9e70ef86e5a2aa:    <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">config-sha256:beae173ccac6ad749f76713cf4440fe3d21d1043fe616dfbe30775815d1d0f6a:   <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">elapsed: 1.0 s                                                                    total:  756.6  (756.2 KiB/s)</span><br><span class="line">unpacking linux/amd64 sha256:62ffc2ed7554e4c6d360bce40bbcf196573dd27c4ce080641a2c59867e732dee...</span><br><span class="line"><span class="keyword">done</span>: 53.354745ms</span><br></pre></td></tr></table></figure>
+<h5 id="自签证书">自签证书</h5>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull harbor.test-cri.com/test-cri/busybox:latest</span><br><span class="line">INFO[0000] trying next host                              error=<span class="string">&quot;failed to do request: Head \&quot;https://harbor.test-cri.com/v2/test-cri/busybox/manifests/latest\&quot;: x509: certificate signed by unknown authority&quot;</span> host=harbor.test-cri.com</span><br><span class="line">ctr: failed to resolve reference <span class="string">&quot;harbor.test-cri.com/test-cri/busybox:latest&quot;</span>: failed to <span class="keyword">do</span> request: Head <span class="string">&quot;https://harbor.test-cri.com/v2/test-cri/busybox/manifests/latest&quot;</span>: x509: certificate signed by unknown authority</span><br></pre></td></tr></table></figure>
+<p>上面的报错可以看到，自签证书会报错，可以通过 <code>--skip-verify</code> 来跳过证书校验</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull --skip-verify harbor.test-cri.com/test-cri/busybox:latest</span><br><span class="line">harbor.test-cri.com/test-cri/busybox:latest:                                      resolved       |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">manifest-sha256:62ffc2ed7554e4c6d360bce40bbcf196573dd27c4ce080641a2c59867e732dee: exists         |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">config-sha256:beae173ccac6ad749f76713cf4440fe3d21d1043fe616dfbe30775815d1d0f6a:   exists         |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">layer-sha256:5cc84ad355aaa64f46ea9c7bbcc319a9d808ab15088a27209c9e70ef86e5a2aa:    exists         |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">elapsed: 0.3 s                                                                    total:   0.0 B (0.0 B/s)</span><br><span class="line">unpacking linux/amd64 sha256:62ffc2ed7554e4c6d360bce40bbcf196573dd27c4ce080641a2c59867e732dee...</span><br><span class="line"><span class="keyword">done</span>: 7.565545ms</span><br></pre></td></tr></table></figure>
+<h4 id="拉取私有仓库镜像">拉取私有仓库镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br><span class="line">registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest: resolving      |--------------------------------------|</span><br><span class="line">elapsed: 0.5 s                                             total:   0.0 B (0.0 B/s)</span><br><span class="line">INFO[0000] trying next host                              error=<span class="string">&quot;pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed&quot;</span> host=registry.cn-hangzhou.aliyuncs.com</span><br><span class="line">ctr: failed to resolve reference <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest&quot;</span>: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed</span><br></pre></td></tr></table></figure>
+<p>上面的报错可以看到，拉私有镜像会报错认证失败，需要通过<code>--user</code> 参数加上账号密码，其中username和password需要替换真实用户名和密码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images pull  --user <span class="variable">$username</span>:<span class="variable">$password</span>  registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br><span class="line">registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest:                        resolved       |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">manifest-sha256:62ffc2ed7554e4c6d360bce40bbcf196573dd27c4ce080641a2c59867e732dee: <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">config-sha256:beae173ccac6ad749f76713cf4440fe3d21d1043fe616dfbe30775815d1d0f6a:   <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">layer-sha256:5cc84ad355aaa64f46ea9c7bbcc319a9d808ab15088a27209c9e70ef86e5a2aa:    <span class="keyword">done</span>           |++++++++++++++++++++++++++++++++++++++|</span><br><span class="line">elapsed: 0.9 s                                                                    total:   0.0 B (0.0 B/s)</span><br><span class="line">unpacking linux/amd64 sha256:62ffc2ed7554e4c6d360bce40bbcf196573dd27c4ce080641a2c59867e732dee...</span><br><span class="line"><span class="keyword">done</span>: 12.415462ms</span><br></pre></td></tr></table></figure>
+<h4 id="查看镜像">查看镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images <span class="built_in">ls</span></span><br></pre></td></tr></table></figure>
+<h4 id="删除镜像">删除镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ctr --namespace k8s.io images delete registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br><span class="line">registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br></pre></td></tr></table></figure>
+<h3 id="crictl-工具拉取镜像">crictl 工具拉取镜像</h3>
+<blockquote>
+<p>crictl 工具安装官方文档<a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/cri-tools/blob/master/docs/crictl.md">Container Runtime Interface (CRI) CLI</a></p>
+</blockquote>
+<p>crictl 拉取镜像docker官方镜像的话 可以省略镜像的地址和名称空间，直接使用仓库名称:[tag] , 比如： busybox:latest</p>
+<blockquote>
+<p>crictl 和kubelet 拉取和运行容器默认都是在k8s.io的名称空间， 不需要手动指定</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">crictl  pull --<span class="built_in">help</span></span><br><span class="line">NAME:</span><br><span class="line">   crictl pull - Pull an image from a registry</span><br><span class="line"></span><br><span class="line">USAGE:</span><br><span class="line">   crictl pull [<span class="built_in">command</span> options] NAME[:TAG|@DIGEST]</span><br><span class="line"></span><br><span class="line">OPTIONS:</span><br><span class="line">   --annotation value, -a value [ --annotation value, -a value ]  Annotation to be <span class="built_in">set</span> on the pulled image</span><br><span class="line">   --auth AUTH_STRING                                             Use AUTH_STRING <span class="keyword">for</span> accessing the registry. AUTH_STRING is a <span class="built_in">base64</span> encoded <span class="string">&#x27;USERNAME[:PASSWORD]&#x27;</span> [<span class="variable">$CRICTL_AUTH</span>]</span><br><span class="line">   --creds USERNAME[:PASSWORD]                                    Use USERNAME[:PASSWORD] <span class="keyword">for</span> accessing the registry [<span class="variable">$CRICTL_CREDS</span>]</span><br><span class="line">   --pod-config pod-config.[json|yaml]                            Use pod-config.[json|yaml] to override the the pull c</span><br><span class="line">   --username USERNAME, -u USERNAME                               Use USERNAME <span class="keyword">for</span> accessing the registry. The password will be requested on the <span class="built_in">command</span> line</span><br><span class="line">   --<span class="built_in">help</span>, -h                                                     show <span class="built_in">help</span></span><br></pre></td></tr></table></figure>
+<h4 id="拉取docker官方镜像-2">拉取docker官方镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ crictl  pull busybox:latest</span><br><span class="line">Image is up to <span class="built_in">date</span> <span class="keyword">for</span> sha256:beae173ccac6ad749f76713cf4440fe3d21d1043fe616dfbe30775815d1d0f6a</span><br></pre></td></tr></table></figure>
+<h4 id="拉取非安全配置镜像">拉取非安全配置镜像</h4>
+<p>crictl 命令行默认是不支持的， 需要调整config.toml， 默认是在 /etc/containerd/config.toml调整在下方</p>
+<h4 id="拉取私有镜像">拉取私有镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ crictl  pull registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br><span class="line">E0619 16:44:57.810567 1900073 remote_image.go:171] <span class="string">&quot;PullImage from image service failed&quot;</span> err=<span class="string">&quot;rpc error: code = Unknown desc = failed to pull and unpack image \&quot;registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest\&quot;: failed to resolve reference \&quot;registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest\&quot;: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed&quot;</span> image=<span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest&quot;</span></span><br><span class="line">FATA[0000] pulling image: rpc error: code = Unknown desc = failed to pull and unpack image <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest&quot;</span>: failed to resolve reference <span class="string">&quot;registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest&quot;</span>: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed</span><br></pre></td></tr></table></figure>
+<p>上面的报错可以看到，拉私有镜像会报错认证失败，需要通过–creds 参数加上账号密码，其中username和password需要替换真实用户名和密码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ crictl  pull --creds  <span class="variable">$username</span>:<span class="variable">$password</span> registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br><span class="line">Image is up to <span class="built_in">date</span> <span class="keyword">for</span> sha256:beae173ccac6ad749f76713cf4440fe3d21d1043fe616dfbe30775815d1d0f6a</span><br></pre></td></tr></table></figure>
+<h4 id="查看镜像-2">查看镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ crictl  images</span><br></pre></td></tr></table></figure>
+<h4 id="删除镜像-2">删除镜像</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ crictl rmi registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br><span class="line">Deleted: registry.cn-hangzhou.aliyuncs.com/test-cri/busybox:latest</span><br></pre></td></tr></table></figure>
+<h2 id="containerd的配置文件">containerd的配置文件</h2>
+<p>可以参考官方文档 <a target="_blank" rel="noopener" href="https://github.com/containerd/containerd/blob/main/docs/cri/config.md#full-configuration">full-configuration</a></p>
+<blockquote>
+<p>注意缩进,一个是通过config_path指定配置文件, 是热更新的 (官方推荐，containerd 1.4之前是不支持的)，另一个是通过直接修改config.toml方式添加</p>
+</blockquote>
+<h3 id="配置加速器，拉取docker官方镜像">配置加速器，拉取docker官方镜像</h3>
+<h4 id="使用config-path方式">使用config_path方式</h4>
+<p>只需确认 /etc/containerd/config.toml是否有配置 config_path和对应的路径， 然后如下创建即可，此种方式是热更新，不用重启containerd</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">mkdir</span> -p /etc/containerd/cert.d/docker.io</span><br><span class="line"></span><br><span class="line">$ <span class="built_in">cat</span> &lt;&lt; <span class="string">EOF &gt; /etc/containerd/cert.d/docker.io/hosts.toml</span></span><br><span class="line"><span class="string">server = &quot;https://docker.io&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[host.&quot;https://xxxxxxxx.mirror.aliyuncs.com&quot;]</span></span><br><span class="line"><span class="string">  capabilities = [&quot;pull&quot;, &quot;resolve&quot;, &quot;push&quot;]</span></span><br><span class="line"><span class="string">EOF</span></span><br></pre></td></tr></table></figure>
+<h4 id="配置config-toml的方式">配置config.toml的方式</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /etc/containerd/config.toml</span><br><span class="line">version = 2</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">[plugins]</span><br><span class="line">...</span><br><span class="line">    [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>]</span><br><span class="line">    ....</span><br><span class="line"></span><br><span class="line">    [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry]</span><br><span class="line">      <span class="comment"># config_path = &quot;/etc/containerd/cert.d&quot;</span></span><br><span class="line">      [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry.mirrors]</span><br><span class="line">        [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry.mirrors.<span class="string">&quot;docker.io&quot;</span>]</span><br><span class="line">          endpoint = [<span class="string">&quot;https://xxxxxxxx.mirror.aliyuncs.com&quot;</span>]</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<h5 id="重启containerd">重启containerd</h5>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart containerd</span><br></pre></td></tr></table></figure>
+<p>如果有报错 journalctl -xe -u containerd --no-pager 查一下为何报错</p>
+<h3 id="配置非安全方式拉取镜像">配置非安全方式拉取镜像</h3>
+<h4 id="使用config-path方式-2">使用config_path方式</h4>
+<p>只需确认 /etc/containerd/config.toml是否有配置 config_path和对应的路径， 然后如下创建即可， 此种方式是热更新， 不用重启containerd</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># http方式</span></span><br><span class="line">$ <span class="built_in">mkdir</span> -p /etc/containerd/cert.d/192.168.66.42:5000</span><br><span class="line"></span><br><span class="line">$ <span class="built_in">cat</span> &lt;&lt; <span class="string">EOF &gt; /etc/containerd/cert.d/192.168.66.42:5000/hosts.toml</span></span><br><span class="line"><span class="string">server = &quot;http://192.168.66.42:5000&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[host.&quot;http://192.168.66.42:5000&quot;]</span></span><br><span class="line"><span class="string">  capabilities = [&quot;pull&quot;, &quot;resolve&quot;, &quot;push&quot;]</span></span><br><span class="line"><span class="string">EOF</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 自建证书</span></span><br><span class="line">$ <span class="built_in">mkdir</span> -p /etc/containerd/cert.d/harbor.test-cri.com</span><br><span class="line">$ <span class="built_in">cat</span> &lt;&lt; <span class="string">EOF &gt; /etc/containerd/cert.d/harbor.test-cri.com/hosts.toml</span></span><br><span class="line"><span class="string">server = &quot;https://harbor.test-cri.com&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[host.&quot;https://harbor.test-cri.com&quot;]</span></span><br><span class="line"><span class="string">  capabilities = [&quot;pull&quot;, &quot;resolve&quot;, &quot;push&quot;]</span></span><br><span class="line"><span class="string">  skip_verify = true</span></span><br><span class="line"><span class="string">  # ca = &quot;/opt/ssl/ca.crt&quot;  # 或者上传ca证书</span></span><br><span class="line"><span class="string">EOF</span></span><br></pre></td></tr></table></figure>
+<h4 id="配置config-toml的方式-2">配置config.toml的方式</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /etc/containerd/config.toml</span><br><span class="line">version = 2</span><br><span class="line">...</span><br><span class="line">[plugins]</span><br><span class="line">...</span><br><span class="line">    [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>]</span><br><span class="line">    ....</span><br><span class="line"></span><br><span class="line">      [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry]</span><br><span class="line">         <span class="comment"># config_path = &quot;/etc/containerd/cert.d&quot;</span></span><br><span class="line">        [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry.mirrors]</span><br><span class="line">          [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry.mirrors.<span class="string">&quot;192.168.66.42:5000&quot;</span>]      <span class="comment"># 如果是http方式拉取，只需要申明我们的镜像地址是一个http类型的即可</span></span><br><span class="line">            endpoint = [<span class="string">&quot;http://192.168.66.42:5000&quot;</span>]</span><br><span class="line"></span><br><span class="line">        [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry.configs]</span><br><span class="line">          [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry.configs.<span class="string">&quot;harbor.test-cri.com&quot;</span>.tls] <span class="comment"># 如果是自签证书， 只需要设置不校验证书即可</span></span><br><span class="line">            insecure_skip_verify = <span class="literal">true</span></span><br><span class="line">            <span class="comment"># ca_file = &quot;/opt/ssl/ca.crt&quot; # 或者上传ca证书</span></span><br><span class="line">            <span class="comment"># cert_file =&quot; &quot; # 双向认证cert</span></span><br><span class="line">            <span class="comment"># key_file = &quot; &quot; # 双向认证key</span></span><br><span class="line">        [plugins.<span class="string">&quot;io.containerd.grpc.v1.cri&quot;</span>.registry.configs.<span class="string">&quot;harbor.test-cri.com&quot;</span>.auth] <span class="comment"># 配置认证</span></span><br><span class="line">           username = <span class="string">&quot;admin&quot;</span></span><br><span class="line">           password = <span class="string">&quot;Harbor12345&quot;</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<h5 id="重启containerd-2">重启containerd</h5>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl restart containerd</span><br></pre></td></tr></table></figure>
+<p>如果有报错 journalctl -xe -u containerd --no-pager 查一下为何报错</p>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/F9-ZtsKBsrPLmtexCnaCmg">https://mp.weixin.qq.com/s/F9-ZtsKBsrPLmtexCnaCmg</a><br>
+<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/1HCn7IEHusB3ONEacdv1LQ">https://mp.weixin.qq.com/s/1HCn7IEHusB3ONEacdv1LQ</a></p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/k8s/" rel="tag"># k8s</a>
+              <a href="/tags/containerd/" rel="tag"># containerd</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/06/18/harborInstall/" rel="prev" title="Helm 安装harbor">
+      <i class="fa fa-chevron-left"></i> Helm 安装harbor
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/06/24/pprofUse/" rel="next" title="pprof使用">
+      pprof使用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.</span> <span class="nav-text">工具介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%95%9C%E5%83%8F%E6%8B%89%E5%8F%96"><span class="nav-number">3.</span> <span class="nav-text">镜像拉取</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ctr-%E5%B7%A5%E5%85%B7%E6%8B%89%E5%8F%96"><span class="nav-number">3.1.</span> <span class="nav-text">ctr 工具拉取</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%89%E5%8F%96docker%E5%AE%98%E6%96%B9%E9%95%9C%E5%83%8F"><span class="nav-number">3.1.1.</span> <span class="nav-text">拉取docker官方镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%89%E5%8F%96%E9%9D%9E%E5%AE%89%E5%85%A8%E7%9A%84%E9%95%9C%E5%83%8F"><span class="nav-number">3.1.2.</span> <span class="nav-text">拉取非安全的镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#http%E6%96%B9%E5%BC%8F"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">http方式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%87%AA%E7%AD%BE%E8%AF%81%E4%B9%A6"><span class="nav-number">3.1.2.2.</span> <span class="nav-text">自签证书</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%89%E5%8F%96%E7%A7%81%E6%9C%89%E4%BB%93%E5%BA%93%E9%95%9C%E5%83%8F"><span class="nav-number">3.1.3.</span> <span class="nav-text">拉取私有仓库镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E9%95%9C%E5%83%8F"><span class="nav-number">3.1.4.</span> <span class="nav-text">查看镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E9%95%9C%E5%83%8F"><span class="nav-number">3.1.5.</span> <span class="nav-text">删除镜像</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#crictl-%E5%B7%A5%E5%85%B7%E6%8B%89%E5%8F%96%E9%95%9C%E5%83%8F"><span class="nav-number">3.2.</span> <span class="nav-text">crictl 工具拉取镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%89%E5%8F%96docker%E5%AE%98%E6%96%B9%E9%95%9C%E5%83%8F-2"><span class="nav-number">3.2.1.</span> <span class="nav-text">拉取docker官方镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%89%E5%8F%96%E9%9D%9E%E5%AE%89%E5%85%A8%E9%85%8D%E7%BD%AE%E9%95%9C%E5%83%8F"><span class="nav-number">3.2.2.</span> <span class="nav-text">拉取非安全配置镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%89%E5%8F%96%E7%A7%81%E6%9C%89%E9%95%9C%E5%83%8F"><span class="nav-number">3.2.3.</span> <span class="nav-text">拉取私有镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E9%95%9C%E5%83%8F-2"><span class="nav-number">3.2.4.</span> <span class="nav-text">查看镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E9%95%9C%E5%83%8F-2"><span class="nav-number">3.2.5.</span> <span class="nav-text">删除镜像</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#containerd%E7%9A%84%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">containerd的配置文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%8A%A0%E9%80%9F%E5%99%A8%EF%BC%8C%E6%8B%89%E5%8F%96docker%E5%AE%98%E6%96%B9%E9%95%9C%E5%83%8F"><span class="nav-number">4.1.</span> <span class="nav-text">配置加速器，拉取docker官方镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8config-path%E6%96%B9%E5%BC%8F"><span class="nav-number">4.1.1.</span> <span class="nav-text">使用config_path方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEconfig-toml%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-number">4.1.2.</span> <span class="nav-text">配置config.toml的方式</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%87%8D%E5%90%AFcontainerd"><span class="nav-number">4.1.2.1.</span> <span class="nav-text">重启containerd</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E9%9D%9E%E5%AE%89%E5%85%A8%E6%96%B9%E5%BC%8F%E6%8B%89%E5%8F%96%E9%95%9C%E5%83%8F"><span class="nav-number">4.2.</span> <span class="nav-text">配置非安全方式拉取镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8config-path%E6%96%B9%E5%BC%8F-2"><span class="nav-number">4.2.1.</span> <span class="nav-text">使用config_path方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEconfig-toml%E7%9A%84%E6%96%B9%E5%BC%8F-2"><span class="nav-number">4.2.2.</span> <span class="nav-text">配置config.toml的方式</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%87%8D%E5%90%AFcontainerd-2"><span class="nav-number">4.2.2.1.</span> <span class="nav-text">重启containerd</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="zmq"
+      src="/images/tx.jpg">
+  <p class="site-author-name" itemprop="name">zmq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zmquan" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zmquan" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zmq</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">闽ICP备2021010566号-1 </a>
+  </div>
+
+ <a target="_blank" rel="noopener" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> 
+   <img src="https://www.zmq100.cn/images/又拍云_logo5.png" border="0" width="50" height="25"> 
+</a>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

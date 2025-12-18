@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 8.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.zmq100.cn","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="使用 cert-manager 签发免费证书  概述 随着 HTTPS 不断普及，越来越多的网站都在从 HTTP 升级到 HTTPS，使用 HTTPS 就需要向权威机构申请证书，需要付出一定的成本，如果需求数量多，也是一笔不小的开支。cert-manager 是 Kubernetes 上的全能证书管理工具，如果对安全级别和证书功能要求不高，可以利用 cert-manager 基于 ACME 协议">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cert-manager 免费证书">
+<meta property="og:url" content="https://www.zmq100.cn/2023/05/14/certManager/index.html">
+<meta property="og:site_name" content="Zmq&#39;s Blog">
+<meta property="og:description" content="使用 cert-manager 签发免费证书  概述 随着 HTTPS 不断普及，越来越多的网站都在从 HTTP 升级到 HTTPS，使用 HTTPS 就需要向权威机构申请证书，需要付出一定的成本，如果需求数量多，也是一笔不小的开支。cert-manager 是 Kubernetes 上的全能证书管理工具，如果对安全级别和证书功能要求不高，可以利用 cert-manager 基于 ACME 协议">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-05-14T13:16:17.000Z">
+<meta property="article:modified_time" content="2025-12-18T06:48:21.000Z">
+<meta property="article:author" content="zmq">
+<meta property="article:tag" content="cert-manager">
+<meta property="article:tag" content="k8s">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.zmq100.cn/2023/05/14/certManager/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>cert-manager 免费证书 | Zmq's Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a81325a5a7afff52c3400dbde0eee2d6";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Zmq's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.zmq100.cn/2023/05/14/certManager/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/tx.jpg">
+      <meta itemprop="name" content="zmq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zmq's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          cert-manager 免费证书
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-14 13:16:17" itemprop="dateCreated datePublished" datetime="2023-05-14T13:16:17+00:00">2023-05-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-12-18 06:48:21" itemprop="dateModified" datetime="2025-12-18T06:48:21+00:00">2025-12-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3/" itemprop="url" rel="index"><span itemprop="name">技术文档</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>使用 cert-manager 签发免费证书</p>
+</blockquote>
+<h2 id="概述">概述</h2>
+<p>随着 HTTPS 不断普及，越来越多的网站都在从 HTTP 升级到 HTTPS，使用 HTTPS 就需要向权威机构申请证书，需要付出一定的成本，如果需求数量多，也是一笔不小的开支。cert-manager 是 Kubernetes 上的全能证书管理工具，如果对安全级别和证书功能要求不高，可以利用 cert-manager 基于 ACME 协议与 Let’s Encrypt 来签发免费证书并自动续期，实现永久免费使用证书。</p>
+<span id="more"></span>
+<h2 id="cert-manager-工作原理">cert-manager 工作原理</h2>
+<p>cert-manager 部署到 Kubernetes 集群后，它会 watch 它所支持的 CRD 资源，我们通过创建 CRD 资源来指示 cert-manager 为我们签发证书并自动续期:</p>
+<p>解释下几个关键的资源:</p>
+<ul>
+<li>Issuer/ClusterIssuer: 用于指示 cert-manager 用什么方式签发证书，本文主要讲解签发免费证书的 ACME 方式。ClusterIssuer 与 Issuer 的唯一区别就是 Issuer 只能用来签发自己所在 namespace 下的证书，ClusterIssuer 可以签发任意 namespace 下的证书。</li>
+<li>Certificate: 用于告诉 cert-manager 我们想要什么域名的证书以及签发证书所需要的一些配置，包括对 Issuer/ClusterIssuer 的引用。</li>
+</ul>
+<h2 id="免费证书签发原理">免费证书签发原理</h2>
+<p>Let’s Encrypt 利用 ACME 协议来校验域名是否真的属于你，校验成功后就可以自动颁发免费证书，证书有效期只有 90 天，在到期前需要再校验一次来实现续期，幸运的是 cert-manager 可以自动续期，这样就可以使用永久免费的证书了。如何校验这个域名是否属于你呢？主流的两种校验方式是 HTTP-01 和 DNS-01，详细校验原理可参考 Let’s Encrypt 的运作方式，下面将简单描述下。</p>
+<h3 id="HTTP-01-校验原理">HTTP-01 校验原理</h3>
+<p>HTTP-01 的校验原理是给你域名指向的 HTTP 服务增加一个临时 location ，Let’s Encrypt 会发送 http 请求到 http://&lt;YOUR_DOMAIN&gt;/.well-known/acme-challenge/<TOKEN>，YOUR_DOMAIN 就是被校验的域名，TOKEN 是 ACME 协议的客户端负责放置的文件，在这里 ACME 客户端就是 cert-manager，它通过修改或创建 Ingress 规则来增加这个临时校验路径并指向提供 TOKEN 的服务。Let’s Encrypt 会对比 TOKEN 是否符合预期，校验成功后就会颁发证书。此方法仅适用于给使用 Ingress 暴露流量的服务颁发证书，并且不支持泛域名证书。</p>
+<h3 id="DNS-01-校验原理">DNS-01 校验原理</h3>
+<p>DNS-01 的校验原理是利用 DNS 提供商的 API Key 拿到你的 DNS 控制权限， 在 Let’s Encrypt 为 ACME 客户端提供令牌后，ACME 客户端 (cert-manager) 将创建从该令牌和您的帐户密钥派生的 TXT 记录，并将该记录放在 _acme-challenge.&lt;YOUR_DOMAIN&gt;。 然后 Let’s Encrypt 将向 DNS 系统查询该记录，如果找到匹配项，就可以颁发证书。此方法不需要你的服务使用 Ingress，并且支持泛域名证书。</p>
+<h3 id="校验方式对比">校验方式对比</h3>
+<p>HTTP-01 的校验方式的优点是: 配置简单通用，不管使用哪个 DNS 提供商都可以使用相同的配置方法；缺点是：需要依赖 Ingress，如果你的服务不是用 Ingress 暴露流量的就不适用，而且不支持泛域名证书。</p>
+<p>DNS-01 的校验方式的优点是没有 HTTP-01 校验方式缺点，不依赖 Ingress，也支持泛域名；缺点就是不同 DNS 提供商的配置方式不一样，而且 DNS 提供商有很多，cert-manager 的 Issuer 不可能每个都去支持，不过有一些可以通过部署实现了 cert-manager 的 Webhook 的服务来扩展 Issuer 进行支持，比如 DNSPod 和 阿里 DNS，详细 Webhook 列表请参考: <a target="_blank" rel="noopener" href="https://cert-manager.io/docs/configuration/acme/dns01/#webhook">https://cert-manager.io/docs/configuration/acme/dns01/#webhook</a></p>
+<p>选择哪种方式呢？条件允许的话，建议是尽量用 DNS-01 的方式，限制更少，功能更全。</p>
+<h2 id="安装使用">安装使用</h2>
+<h3 id="K8S和cert-manager对应的版本">K8S和cert-manager对应的版本</h3>
+<p><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/installation/supported-releases/">https://cert-manager.io/docs/installation/supported-releases/</a></p>
+<h3 id="使用manifest方式安装">使用manifest方式安装</h3>
+<p><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/installation/kubectl/">https://cert-manager.io/docs/installation/kubectl/</a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>默认是安装在<code>cert-manager</code> 名称空间的， 如有需要可自行修改</p>
+</blockquote>
+<h3 id="HTTP0-1">HTTP0-1</h3>
+<p><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/configuration/acme/http01/">https://cert-manager.io/docs/configuration/acme/http01/</a></p>
+<p>如果使用 HTTP-01 的校验方式，需要用到 Ingress 来配合校验。cert-manager 会通过自动修改 Ingress 规则或自动新增 Ingress 两种方式之一来实现对外暴露校验所需的临时 HTTP 路径，这个就是在给 Issuer 配置 http01 校验，指定 Ingress 的 name 或 class 的区别 (见下面的示例)。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">cert-manager.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Issuer</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">letsencrypt-http01</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">prod</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">acme:</span></span><br><span class="line">    <span class="attr">server:</span> <span class="string">https://acme-v02.api.letsencrypt.org/directory</span></span><br><span class="line">    <span class="attr">privateKeySecretRef:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">letsencrypt-http01-account-key</span></span><br><span class="line">    <span class="attr">solvers:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">http01:</span></span><br><span class="line">       <span class="attr">ingress:</span></span><br><span class="line">         <span class="attr">name:</span> <span class="string">web</span> <span class="comment"># 指定被自动修改的 Ingress 名称</span></span><br></pre></td></tr></table></figure>
+<p>使用上面的 Issuer 签发证书，cert-manager 会自动修改 prod/web 这个 Ingress 资源，以暴露校验所需的临时路径，这是自动修改 Ingress 的方式，你也可以使用自动新增 Ingress 的 方式，示例:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">cert-manager.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Issuer</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">letsencrypt-http01</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">prod</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">acme:</span></span><br><span class="line">    <span class="attr">server:</span> <span class="string">https://acme-v02.api.letsencrypt.org/directory</span></span><br><span class="line">    <span class="attr">privateKeySecretRef:</span></span><br><span class="line">      <span class="attr">name:</span> <span class="string">letsencrypt-http01-account-key</span></span><br><span class="line">    <span class="attr">solvers:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">http01:</span></span><br><span class="line">       <span class="attr">ingress:</span></span><br><span class="line">         <span class="attr">class:</span> <span class="string">nginx</span> <span class="comment"># 指定自动创建的 Ingress 的 ingress class</span></span><br></pre></td></tr></table></figure>
+<p>使用上面的 Issuer 签发证书，cert-manager 会自动创建 Ingress 资源，以暴露校验所需的临时路径。</p>
+<p>有了 Issuer，接下来就可以创建 Certificate 并引用 Issuer 进行签发了，示例:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">cert-manager.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Certificate</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-mydomain-com</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">prod</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">dnsNames:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">test.mydomain.com</span> <span class="comment"># 要签发证书的域名</span></span><br><span class="line">  <span class="attr">issuerRef:</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Issuer</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">letsencrypt-http01</span> <span class="comment"># 引用 Issuer，指示采用 http01 方式进行校验</span></span><br><span class="line">  <span class="attr">secretName:</span> <span class="string">test-mydomain-com-tls</span> <span class="comment"># 最终签发出来的证书会保存在这个 Secret 里面</span></span><br></pre></td></tr></table></figure>
+<h3 id="DNS-01">DNS-01</h3>
+<p><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/configuration/acme/dns01/">https://cert-manager.io/docs/configuration/acme/dns01/</a></p>
+<p>如果使用 DNS-01 的校验方式，就需要看你使用的哪个 DNS 提供商了，cert-manager 内置了一些 DNS 提供商的支持，详细列表和用法请参考 Supported DNS01 providers，不过 cert-manager 不可能去支持所有的 DNS 提供商，如果没有你所使用的 DNS 提供商怎么办呢？有两种方案:</p>
+<p>方案一：设置 Custom Nameserver。在你的 DNS 提供商后台设置 custom nameserver，指向像 cloudflare 这种可以管理其它 DNS 提供商域名的 nameserver 地址，具体地址可登录 cloudflare 后台查看:</p>
+<p>方案二：使用 Webhook。使用 cert-manager 的 Webhook 来扩展 cert-manager 的 DNS-01 验证所支持的 DNS 提供商，已经有许多第三方实现，包括国内常用的 DNSPod 与阿里 DNS，详细列表参考: Webhook。</p>
+<p>如果使用 DNS-01 的校验方式，就需要看你使用的哪个 DNS 提供商了，cert-manager 内置了一些 DNS 提供商的支持，详细列表和用法请参考 <a target="_blank" rel="noopener" href="https://cert-manager.io/docs/configuration/acme/dns01/#supported-dns01-providers">https://cert-manager.io/docs/configuration/acme/dns01/#supported-dns01-providers</a></p>
+<h3 id="DNSPod的webhook-使用manifest方式安装">DNSPod的webhook 使用manifest方式安装</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f https://raw.githubusercontent.com/imroc/cert-manager-webhook-dnspod/master/bundle.yaml</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>默认是安装在<code>cert-manager</code> 名称空间的， 如有需要可自行修改</p>
+</blockquote>
+<p>转载自 <a target="_blank" rel="noopener" href="https://imroc.cc/kubernetes/trick/certs/sign-free-certs-with-cert-manager.html">https://imroc.cc/kubernetes/trick/certs/sign-free-certs-with-cert-manager.html</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/k8s/" rel="tag"># k8s</a>
+              <a href="/tags/cert-manager/" rel="tag"># cert-manager</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/05/14/istioConfigDumpTest/" rel="prev" title="istio的故障注入和熔断的configdump位置">
+      <i class="fa fa-chevron-left"></i> istio的故障注入和熔断的configdump位置
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/05/21/selfCertificate/" rel="next" title="openssl/cfssl 自签证书">
+      openssl/cfssl 自签证书 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cert-manager-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">cert-manager 工作原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%8D%E8%B4%B9%E8%AF%81%E4%B9%A6%E7%AD%BE%E5%8F%91%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">免费证书签发原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HTTP-01-%E6%A0%A1%E9%AA%8C%E5%8E%9F%E7%90%86"><span class="nav-number">3.1.</span> <span class="nav-text">HTTP-01 校验原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DNS-01-%E6%A0%A1%E9%AA%8C%E5%8E%9F%E7%90%86"><span class="nav-number">3.2.</span> <span class="nav-text">DNS-01 校验原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%A1%E9%AA%8C%E6%96%B9%E5%BC%8F%E5%AF%B9%E6%AF%94"><span class="nav-number">3.3.</span> <span class="nav-text">校验方式对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">安装使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#K8S%E5%92%8Ccert-manager%E5%AF%B9%E5%BA%94%E7%9A%84%E7%89%88%E6%9C%AC"><span class="nav-number">4.1.</span> <span class="nav-text">K8S和cert-manager对应的版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8manifest%E6%96%B9%E5%BC%8F%E5%AE%89%E8%A3%85"><span class="nav-number">4.2.</span> <span class="nav-text">使用manifest方式安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HTTP0-1"><span class="nav-number">4.3.</span> <span class="nav-text">HTTP0-1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DNS-01"><span class="nav-number">4.4.</span> <span class="nav-text">DNS-01</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DNSPod%E7%9A%84webhook-%E4%BD%BF%E7%94%A8manifest%E6%96%B9%E5%BC%8F%E5%AE%89%E8%A3%85"><span class="nav-number">4.5.</span> <span class="nav-text">DNSPod的webhook 使用manifest方式安装</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="zmq"
+      src="/images/tx.jpg">
+  <p class="site-author-name" itemprop="name">zmq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zmquan" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zmquan" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zmq</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">闽ICP备2021010566号-1 </a>
+  </div>
+
+ <a target="_blank" rel="noopener" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> 
+   <img src="https://www.zmq100.cn/images/又拍云_logo5.png" border="0" width="50" height="25"> 
+</a>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

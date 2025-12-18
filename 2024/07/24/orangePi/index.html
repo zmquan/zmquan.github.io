@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 8.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.zmq100.cn","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1orangepi-config [optional]配置网络等： https:&#x2F;&#x2F;github.com&#x2F;wukongdaily&#x2F;OrangePiShell OrangePi 禁用交换分区的方法  https:&#x2F;&#x2F;blog.csdn.net&#x2F;Atticus_zhang&#x2F;article&#x2F;details&#x2F;132888408 禁用OrangePi开发板交换分区，需要先关闭开发板 linux 系统的 or">
+<meta property="og:type" content="article">
+<meta property="og:title" content="orangePi 初始化">
+<meta property="og:url" content="https://www.zmq100.cn/2024/07/24/orangePi/index.html">
+<meta property="og:site_name" content="Zmq&#39;s Blog">
+<meta property="og:description" content="1orangepi-config [optional]配置网络等： https:&#x2F;&#x2F;github.com&#x2F;wukongdaily&#x2F;OrangePiShell OrangePi 禁用交换分区的方法  https:&#x2F;&#x2F;blog.csdn.net&#x2F;Atticus_zhang&#x2F;article&#x2F;details&#x2F;132888408 禁用OrangePi开发板交换分区，需要先关闭开发板 linux 系统的 or">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-07-24T22:00:57.000Z">
+<meta property="article:modified_time" content="2025-12-18T06:48:21.000Z">
+<meta property="article:author" content="zmq">
+<meta property="article:tag" content="Ubuntu">
+<meta property="article:tag" content="orangePi">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.zmq100.cn/2024/07/24/orangePi/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>orangePi 初始化 | Zmq's Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a81325a5a7afff52c3400dbde0eee2d6";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Zmq's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.zmq100.cn/2024/07/24/orangePi/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/tx.jpg">
+      <meta itemprop="name" content="zmq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zmq's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          orangePi 初始化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-07-24 22:00:57" itemprop="dateCreated datePublished" datetime="2024-07-24T22:00:57+00:00">2024-07-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-12-18 06:48:21" itemprop="dateModified" datetime="2025-12-18T06:48:21+00:00">2025-12-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3/" itemprop="url" rel="index"><span itemprop="name">技术文档</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">orangepi-config</span><br></pre></td></tr></table></figure>
+<p>[optional]配置网络等： <a target="_blank" rel="noopener" href="https://github.com/wukongdaily/OrangePiShell">https://github.com/wukongdaily/OrangePiShell</a></p>
+<h2 id="OrangePi-禁用交换分区的方法">OrangePi 禁用交换分区的方法</h2>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/Atticus_zhang/article/details/132888408">https://blog.csdn.net/Atticus_zhang/article/details/132888408</a><br>
+禁用OrangePi开发板交换分区，需要先关闭开发板 linux 系统的 orangepi-ramlog 和 orangepi-zram 服务。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ sudo sed -i <span class="string">&quot;s/ENABLED=true/ENABLED=false/&quot;</span> /etc/default/orangepi-ramlog       <span class="comment"># 关闭 orangepi-ramlog</span></span><br><span class="line">$ sudo sed -i <span class="string">&quot;s/ENABLED=true/ENABLED=false/&quot;</span> /etc/default/orangepi-zram-config  <span class="comment"># 关闭 orangepi-zram 服务</span></span><br><span class="line">$ sudo vim /etc/fstab                                                            <span class="comment"># 然后屏蔽 tmpfs 的配置</span></span><br><span class="line"><span class="comment"># tmpfs /tmp tmpfs defaults, nosuid 0 0</span></span><br><span class="line">$ sudo reboot</span><br></pre></td></tr></table></figure>
+<h2 id="1Panel">1Panel</h2>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://1panel.cn/docs/installation/online_installation/#2">https://1panel.cn/docs/installation/online_installation/#2</a></p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh &amp;&amp; sudo bash quick_start.sh</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<h2 id="小雅alist篇">小雅alist篇</h2>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://github.com/monlor/docker-xiaoya">https://github.com/monlor/docker-xiaoya</a></p>
+</blockquote>
+<p>选用安装 docker-compose</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">$ wget https://raw.githubusercontent.com/monlor/docker-xiaoya/main/env</span><br><span class="line"><span class="comment"># 根据如下三个网址的提示完成token的填写到以上的env里</span></span><br><span class="line"><span class="comment"># 阿里云盘Token(32位):        https://alist.nn.ci/zh/guide/drivers/aliyundrive.html</span></span><br><span class="line"><span class="comment"># 阿里云盘OpenToken(335位):   https://alist.nn.ci/tool/aliyundrive/request.html</span></span><br><span class="line"><span class="comment"># 阿里云盘转存目录folder id:   https://www.aliyundrive.com/s/rP9gP3h9asE</span></span><br><span class="line"></span><br><span class="line">$ sudo <span class="built_in">mkdir</span> /opt/xiaoya &amp;&amp; <span class="built_in">cd</span> /opt/xiaoya</span><br><span class="line">$ sudo <span class="built_in">cat</span> &lt;&lt;<span class="string">EOF &gt;  /opt/xiaoya/docker-compose.yml</span></span><br><span class="line"><span class="string">services:</span></span><br><span class="line"><span class="string">  alist:</span></span><br><span class="line"><span class="string">    image: ghcr.io/monlor/xiaoya-alist:latest</span></span><br><span class="line"><span class="string">    volumes:</span></span><br><span class="line"><span class="string">      - xiaoya:/data</span></span><br><span class="line"><span class="string">    ports:</span></span><br><span class="line"><span class="string">      - &quot;5678:5678&quot;</span></span><br><span class="line"><span class="string">    env_file:</span></span><br><span class="line"><span class="string">      - env</span></span><br><span class="line"><span class="string">    restart: unless-stopped</span></span><br><span class="line"><span class="string">    networks:</span></span><br><span class="line"><span class="string">      - default</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">networks:</span></span><br><span class="line"><span class="string">  default:</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">volumes:</span></span><br><span class="line"><span class="string">  xiaoya:</span></span><br><span class="line"><span class="string">EOF</span></span><br><span class="line"></span><br><span class="line">$ docker-compose up -d</span><br></pre></td></tr></table></figure>
+<h2 id="go-环境篇">go 环境篇</h2>
+<p>pprof工具是go tool里的工具， 所以需要提前安装golang环境</p>
+<blockquote>
+<p>官方文档： <a target="_blank" rel="noopener" href="https://go.dev/doc/install">https://go.dev/doc/install</a></p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ wget https://go.dev/dl/go1.23.2.linux-arm64.tar.gz</span><br><span class="line">$ <span class="built_in">rm</span> -rf /usr/local/go &amp;&amp; tar -C /usr/local -xzf go1.23.2.linux-arm64.tar.gz</span><br><span class="line">$ <span class="built_in">echo</span> <span class="string">&quot;export PATH=<span class="variable">$PATH</span>:/usr/local/go/bin&quot;</span> &gt;&gt; /etc/profile </span><br><span class="line">$ <span class="built_in">source</span> /etc/profile</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者通过docker运行</span></span><br><span class="line">$ docker run -itd --name golang-env --net host golang bash</span><br><span class="line">$ docker <span class="built_in">exec</span> -it golang-env bash</span><br></pre></td></tr></table></figure>
+<h2 id="科学篇">科学篇</h2>
+<blockquote>
+<p>文档：<a target="_blank" rel="noopener" href="https://github.com/TPClash/tpclash">https://github.com/TPClash/tpclash</a></p>
+</blockquote>
+<blockquote>
+<p>选用docker运行<br>
+<a target="_blank" rel="noopener" href="https://github.com/TPClash/tpclash/blob/master/GUIDE.md#13docker-%E8%BF%90%E8%A1%8C">https://github.com/TPClash/tpclash/blob/master/GUIDE.md#13docker-运行</a></p>
+</blockquote>
+<blockquote>
+<p>参考配置clash.yaml配置文件<br>
+<a target="_blank" rel="noopener" href="https://github.com/TPClash/tpclash/blob/master/example.yaml">https://github.com/TPClash/tpclash/blob/master/example.yaml</a></p>
+</blockquote>
+<h3 id="配置后启动运行即可">配置后启动运行即可</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">mkdir</span> -p /opt/tpclash</span><br><span class="line">$ sudo docker run -dt \</span><br><span class="line">  --name tpclash \</span><br><span class="line">  --privileged \</span><br><span class="line">  --network=host \</span><br><span class="line">  -v /opt/tpclash/clash.yaml:/etc/clash.yaml \</span><br><span class="line">  mritd/tpclash</span><br></pre></td></tr></table></figure>
+<h2 id="FRP篇">FRP篇</h2>
+<blockquote>
+<p>文档： <a target="_blank" rel="noopener" href="https://gofrp.org/zh-cn/docs/overview/">https://gofrp.org/zh-cn/docs/overview/</a><br>
+内网穿透也可以使用这个：<a target="_blank" rel="noopener" href="https://www.cpolar.com/docs">https://www.cpolar.com/docs</a></p>
+</blockquote>
+<h3 id="server端-云服务器-amd架构">server端 云服务器-amd架构</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1、github 下载对应的版本(里面包含server和client端)，服务端frps，客户端frpc</span></span><br><span class="line">$ sudo wget https://github.com/fatedier/frp/releases/download/v0.59.0/frp_0.59.0_linux_amd64.tar.gz</span><br><span class="line">$ sudo <span class="built_in">mkdir</span> -p /opt/frp &amp;&amp; tar xf frp_0.59.0_linux_amd64.tar.gz -C /opt/frp</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2、frps配置文件，默认监听7000端口，安全起见配置auth.token</span></span><br><span class="line">$ <span class="built_in">cat</span>  /opt/frp/frp_0.59.0_linux_amd64/frps.toml</span><br><span class="line">bindPort = 7000</span><br><span class="line">auth.token = <span class="string">&quot;Aa123456&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2、配置systemd管理</span></span><br><span class="line">$ sudo <span class="built_in">cat</span> &lt;&lt;<span class="string">EOF &gt; /etc/systemd/system/frps.service</span></span><br><span class="line"><span class="string">[Unit]</span></span><br><span class="line"><span class="string"># 服务名称，可自定义</span></span><br><span class="line"><span class="string">Description = frp server</span></span><br><span class="line"><span class="string">After = network.target syslog.target</span></span><br><span class="line"><span class="string">Wants = network.target</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Service]</span></span><br><span class="line"><span class="string">Type = simple</span></span><br><span class="line"><span class="string"># 启动frps的命令，需修改为您的frps的安装路径</span></span><br><span class="line"><span class="string">ExecStart = /opt/frp/frp_0.59.0_linux_amd64/frps -c /opt/frp/frp_0.59.0_linux_amd64/frps.toml</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Install]</span></span><br><span class="line"><span class="string">WantedBy = multi-user.target</span></span><br><span class="line"><span class="string">EOF</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 4、启动frp server服务</span></span><br><span class="line">$ sudo systemctl daemon-reload</span><br><span class="line">$ systemctl start frps</span><br><span class="line">$ systemctl <span class="built_in">enable</span> frps</span><br></pre></td></tr></table></figure>
+<h3 id="client端-orangepi-arm架构">client端 orangepi-arm架构</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1、github 下载对应的版本(里面包含server和client端)，服务端frps，客户端frpc</span></span><br><span class="line">$ sudo wget https://github.com/fatedier/frp/releases/download/v0.59.0/frp_0.59.0_linux_arm64.tar.gz</span><br><span class="line">$ sudo  <span class="built_in">mkdir</span> -p /opt/frp &amp;&amp; tar xf frp_0.59.0_linux_arm64.tar.gz -C /opt/frp</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2、frpc配置文件，配置访问服务端7000端口，安全起见配置auth.token，6000是通过server端映射到127的22端口，会在server端启动6000监听端口</span></span><br><span class="line">$ <span class="built_in">cat</span>  /opt/frp/frp_0.59.0_linux_arm64/frpc.toml</span><br><span class="line">serverAddr = <span class="string">&quot;x.x.x.x&quot;</span></span><br><span class="line">serverPort = 7000</span><br><span class="line">log.level = <span class="string">&quot;trace&quot;</span></span><br><span class="line">auth.token = <span class="string">&quot;Aa123456&quot;</span></span><br><span class="line"></span><br><span class="line">[[proxies]]</span><br><span class="line">name = <span class="string">&quot;test-tcp&quot;</span></span><br><span class="line"><span class="built_in">type</span> = <span class="string">&quot;tcp&quot;</span></span><br><span class="line">localIP = <span class="string">&quot;127.0.0.1&quot;</span></span><br><span class="line">localPort = 22</span><br><span class="line">remotePort = 6000</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置systemd管理</span></span><br><span class="line">$ sudo <span class="built_in">cat</span> &lt;&lt;<span class="string">EOF &gt; /etc/systemd/system/frpc.service</span></span><br><span class="line"><span class="string">[Unit]</span></span><br><span class="line"><span class="string"># 服务名称，可自定义</span></span><br><span class="line"><span class="string">Description = frp client</span></span><br><span class="line"><span class="string">After = network.target syslog.target</span></span><br><span class="line"><span class="string">Wants = network.target</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Service]</span></span><br><span class="line"><span class="string">Type = simple</span></span><br><span class="line"><span class="string"># 启动frpc的命令，需修改为您的frpc的安装路径</span></span><br><span class="line"><span class="string">ExecStart = /opt/frp/frp_0.59.0_linux_arm64/frpc -c /opt/frp/frp_0.59.0_linux_arm64/frpc.toml</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Install]</span></span><br><span class="line"><span class="string">WantedBy = multi-user.target</span></span><br><span class="line"><span class="string">EOF</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动frp server服务</span></span><br><span class="line">$ sudo systemctl daemon-reload</span><br><span class="line">$ systemctl start frpc</span><br><span class="line">$ systemctl <span class="built_in">enable</span> frpc</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Ubuntu/" rel="tag"># Ubuntu</a>
+              <a href="/tags/orangePi/" rel="tag"># orangePi</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/06/11/dockerPull-Push/" rel="prev" title="docker 镜像拉取">
+      <i class="fa fa-chevron-left"></i> docker 镜像拉取
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/07/27/orangePiInstallK8s/" rel="next" title="OrangePi 安装k8s">
+      OrangePi 安装k8s <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#OrangePi-%E7%A6%81%E7%94%A8%E4%BA%A4%E6%8D%A2%E5%88%86%E5%8C%BA%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">OrangePi 禁用交换分区的方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1Panel"><span class="nav-number">2.</span> <span class="nav-text">1Panel</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E9%9B%85alist%E7%AF%87"><span class="nav-number">3.</span> <span class="nav-text">小雅alist篇</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#go-%E7%8E%AF%E5%A2%83%E7%AF%87"><span class="nav-number">4.</span> <span class="nav-text">go 环境篇</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A7%91%E5%AD%A6%E7%AF%87"><span class="nav-number">5.</span> <span class="nav-text">科学篇</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%90%8E%E5%90%AF%E5%8A%A8%E8%BF%90%E8%A1%8C%E5%8D%B3%E5%8F%AF"><span class="nav-number">5.1.</span> <span class="nav-text">配置后启动运行即可</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FRP%E7%AF%87"><span class="nav-number">6.</span> <span class="nav-text">FRP篇</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#server%E7%AB%AF-%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8-amd%E6%9E%B6%E6%9E%84"><span class="nav-number">6.1.</span> <span class="nav-text">server端 云服务器-amd架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#client%E7%AB%AF-orangepi-arm%E6%9E%B6%E6%9E%84"><span class="nav-number">6.2.</span> <span class="nav-text">client端 orangepi-arm架构</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="zmq"
+      src="/images/tx.jpg">
+  <p class="site-author-name" itemprop="name">zmq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zmquan" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zmquan" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zmq</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">闽ICP备2021010566号-1 </a>
+  </div>
+
+ <a target="_blank" rel="noopener" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> 
+   <img src="https://www.zmq100.cn/images/又拍云_logo5.png" border="0" width="50" height="25"> 
+</a>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 8.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.zmq100.cn","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="背景 使用nginx-ingress遇到backends不更新的问题，在修改svc的 targetPort之后nginx-ingress的backends不能正常更新成新的targetPort。 关于endpointslices，是k8s 1.16 引入的新feature ， 目的就是当客户端去get一个很大的endpoint的list的时候可能存在的卡顿，解析资源比较大引发的问题。 所以社区引入">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Debug Nginx-ingress-controller">
+<meta property="og:url" content="https://www.zmq100.cn/2024/08/28/DebugNginxIngress/index.html">
+<meta property="og:site_name" content="Zmq&#39;s Blog">
+<meta property="og:description" content="背景 使用nginx-ingress遇到backends不更新的问题，在修改svc的 targetPort之后nginx-ingress的backends不能正常更新成新的targetPort。 关于endpointslices，是k8s 1.16 引入的新feature ， 目的就是当客户端去get一个很大的endpoint的list的时候可能存在的卡顿，解析资源比较大引发的问题。 所以社区引入">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-08-28T14:49:50.000Z">
+<meta property="article:modified_time" content="2025-12-18T06:48:21.000Z">
+<meta property="article:author" content="zmq">
+<meta property="article:tag" content="k8s">
+<meta property="article:tag" content="nginx-ingress-controller">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.zmq100.cn/2024/08/28/DebugNginxIngress/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Debug Nginx-ingress-controller | Zmq's Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a81325a5a7afff52c3400dbde0eee2d6";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Zmq's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.zmq100.cn/2024/08/28/DebugNginxIngress/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/tx.jpg">
+      <meta itemprop="name" content="zmq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zmq's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Debug Nginx-ingress-controller
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-08-28 14:49:50" itemprop="dateCreated datePublished" datetime="2024-08-28T14:49:50+00:00">2024-08-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-12-18 06:48:21" itemprop="dateModified" datetime="2025-12-18T06:48:21+00:00">2025-12-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx-ingress-controller/" itemprop="url" rel="index"><span itemprop="name">nginx-ingress-controller</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="背景">背景</h3>
+<p>使用nginx-ingress遇到backends不更新的问题，在修改svc的 targetPort之后nginx-ingress的backends不能正常更新成新的targetPort。</p>
+<p>关于endpointslices，是k8s 1.16 引入的新feature ， 目的就是当客户端去get一个很大的endpoint的list的时候可能存在的卡顿，解析资源比较大引发的问题。 所以社区引入endpointslices 资源， 把大的endpoint 分片成很多100个端点块的资源，通过kcm的 <code>--max-endpoints-per-slice</code> 参数调整块大小。</p>
+<p>新feature是有很多的问题的，比如kube-proxy 是在1.20之后再引入去获取 endpointslice，看社区出现过一个在使用ExternalName 导致的bug， 在1.23之后的k8s版本中修复了， 类似issue：  <a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/issues/105986">https://github.com/kubernetes/kubernetes/issues/105986</a></p>
+<p>nginx-ingress-controller 看是在 v1.9.0 之后引入使用的 endpointslices<br>
+<a target="_blank" rel="noopener" href="https://github.com/kubernetes/ingress-nginx/commits/controller-v1.9.0/internal/ingress/controller/endpointslices.go">https://github.com/kubernetes/ingress-nginx/commits/controller-v1.9.0/internal/ingress/controller/endpointslices.go</a></p>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/concepts/services-networking/endpoint-slices/">https://kubernetes.io/zh-cn/docs/concepts/services-networking/endpoint-slices/</a><br>
+<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/commit/75f6c249235b40b24e9ea1efdb1ff81dd76a8d68">https://github.com/kubernetes/kubernetes/commit/75f6c249235b40b24e9ea1efdb1ff81dd76a8d68</a><br>
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/">https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/</a></p>
+</blockquote>
+<span id="more"></span>
+<h3 id="环境">环境</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">集群版本</th>
+<th style="text-align:left">nginx-ingress的版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1.22.15</td>
+<td style="text-align:left">v1.10.4</td>
+</tr>
+</tbody>
+</table>
+<h3 id="复现步骤">复现步骤</h3>
+<p>调整nginx-ingress-controller的日志级别为5 <code>--v=5</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">containers:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">args:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">/nginx-ingress-controller</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;--ingress-class=nginx&#x27;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&#x27;--v=5&#x27;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">....</span></span><br></pre></td></tr></table></figure>
+<h3 id="检查现有状态">检查现有状态</h3>
+<p>1）查看svc的的端口</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl get svc nginx-svc -o yaml</span><br></pre></td></tr></table></figure>
+<p>2）查看原来 backends</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl <span class="built_in">exec</span> deployment/nginx-ingress-controller -n kube-system  -- /dbg backends get default-nginx-svc-8080</span><br></pre></td></tr></table></figure>
+<p>3）先打开nginx-ingress-controller日志跟踪</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl logs  -n kube-system  nginx-ingress-controller-xxx -f |  grep -E <span class="string">&quot;socket.go|controller.go|main.go|queue.go|endpointslices.go|nginx.go|reflector.go&quot;</span></span><br></pre></td></tr></table></figure>
+<p>只修改targetPort从11111 为 2222</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl edit svc nginx-svc</span><br></pre></td></tr></table></figure>
+<h3 id="问题复现">问题复现</h3>
+<p>1）查看svc的的端口</p>
+<ul>
+<li>svc已经正常修改为2222了</li>
+</ul>
+<p>2）查看原来 backends</p>
+<ul>
+<li>可以看到backends 的targetPort还是原来的 1111</li>
+</ul>
+<p>3）查看日志输出 nginx-ingress-controller日志跟踪</p>
+<ul>
+<li>可以看到 endpointslices.go:166 , 还是获取的之前的targetPort为 1111 的endpointslices 资源，估计这个就是没有更新的原因</li>
+</ul>
+<h3 id="初步原因：">初步原因：</h3>
+<p>那就先查一下审计吧~</p>
+<ul>
+<li>nginx-ingress去watch的时间： 15:32:56:218090</li>
+<li>更新endpointslices/nginx-svc-r89mv的时间： 15:32:56.221695</li>
+</ul>
+<p>破案了啊， 果然nginx-ingress的watch到的时间， 比kcm更新endpointslices 时间早了  221695 - 218090 = 3605us ， <code>根因</code> 找到了呀~</p>
+<p>那么问题来了，<code>为啥是偶发的</code> 在debug日志看一下</p>
+<ul>
+<li>和后端服务的endpoint数量有关系</li>
+<li>延迟这个东西说不准，有时候快有时候慢的</li>
+</ul>
+<p>那应该就是kcm 去更新 endpointslices 的时候 和 nginx-ingress watch到的这个events 之间有延迟，所以就需要去看看代码了~</p>
+<h3 id="怎么解决">怎么解决</h3>
+<p>社区问题，还是先找社区看看是否有类似的问题。给社区提交issue ： <a target="_blank" rel="noopener" href="https://github.com/kubernetes/ingress-nginx/issues/11863">https://github.com/kubernetes/ingress-nginx/issues/11863</a><br>
+哈哈哈， 被<code>remove bug</code> 了~  ，可是这个已经很bug了。</p>
+<blockquote>
+<p>可恶， 对于issue社区应发的思考</p>
+</blockquote>
+<ul>
+<li>对于提交问题的需要详尽的描述问题， 可是应该已经很详细了</li>
+<li>社区成员没有义务，需要按他提供的方式去提供信息，要么就放弃吧</li>
+</ul>
+<p><strong><code>求仙问卜 不如源码得知!!!</code></strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> https://github.com/kubernetes/ingress-nginx.git</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://github.com/kubernetes/ingress-nginx/blob/main/internal/ingress/controller/endpointslices.go">.ingress-nginx/internal/ingress/controller/endpointslices.go</a></p>
+<p>看就是watch到 endpointSlices更新之后，就去loop最新的endpointSlices 资源， 我感觉加一个sleep就可以，延迟个 200ms，再去get  endpointSlices</p>
+<p>编译后结果， 已经能正常更新了！！！</p>
+<p>给社区提交一个PR，万一merge了呢~<br>
+<a target="_blank" rel="noopener" href="https://github.com/kubernetes/ingress-nginx/pull/11896">https://github.com/kubernetes/ingress-nginx/pull/11896</a></p>
+<h3 id="拓展">拓展</h3>
+<p>如何编译nginx-ingress-controller呢。</p>
+<h4 id="准备">准备</h4>
+<p>1、找一台中国香港的ECS吧。 内地不行，不要问为什么~</p>
+<p>2、安装docker-ce最新版本环境</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun</span><br></pre></td></tr></table></figure>
+<p>3、安装git</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ yum -y install git</span><br></pre></td></tr></table></figure>
+<p>4、go环境安装</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ wget https://go.dev/dl/go1.23.2.linux-amd64.tar.gz</span><br><span class="line">$ <span class="built_in">rm</span> -rf /usr/local/go &amp;&amp; tar -C /usr/local -xzf go1.23.2.linux-amd64.tar.gz</span><br><span class="line">$ <span class="built_in">echo</span> <span class="string">&quot;export PATH=<span class="variable">$PATH</span>:/usr/local/go/bin&quot;</span> &gt;&gt; /etc/profile </span><br><span class="line">$ <span class="built_in">source</span> /etc/profile</span><br></pre></td></tr></table></figure>
+<h4 id="编译">编译</h4>
+<p>1、设置环境变量</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">export</span> DOCKER_IN_DOCKER_ENABLED=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>2、克隆源代码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> https://github.com/kubernetes/ingress-nginx.git</span><br><span class="line">$ <span class="built_in">cd</span> ingress-nginx </span><br></pre></td></tr></table></figure>
+<p>3、切换分支（必须）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ git branch -a</span><br><span class="line">* main</span><br><span class="line">  remotes/origin/HEAD -&gt; origin/main</span><br><span class="line">  remotes/origin/feature-go-crossplane</span><br><span class="line">  remotes/origin/gateway-api</span><br><span class="line">  remotes/origin/gh-pages</span><br><span class="line">  remotes/origin/legacy</span><br><span class="line">  remotes/origin/main</span><br><span class="line">  remotes/origin/release-1.10  <span class="comment"># 案例目标分支</span></span><br><span class="line">  remotes/origin/release-1.11</span><br><span class="line">$ git checkout remotes/origin/release-1.10</span><br></pre></td></tr></table></figure>
+<p>4、修改代码， 参考上文</p>
+<p>5、更新 go.mod 文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ go mod tidy</span><br></pre></td></tr></table></figure>
+<p>6、编译</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ make build</span><br></pre></td></tr></table></figure>
+<p>7、打镜像</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">$ make image</span><br><span class="line"></span><br><span class="line">removing old image gcr.io/k8s-staging-ingress-nginx/controller:v1.10.4</span><br><span class="line">Untagged: gcr.io/k8s-staging-ingress-nginx/controller:v1.10.4</span><br><span class="line">Building docker image (amd64)...</span><br><span class="line">[+] Building 7.5s (15/15) FINISHED                                                                                                                                      docker:default</span><br><span class="line"> =&gt; [internal] load build definition from Dockerfile                                                                                                                              0.0s</span><br><span class="line"> =&gt; =&gt; transferring dockerfile: 3.20kB                                                                                                                                            0.0s</span><br><span class="line"> =&gt; [internal] load metadata <span class="keyword">for</span> registry.k8s.io/ingress-nginx/nginx-1.25:v0.0.12@sha256:2d471b3a34dc43d10c3f3d7f2a6e8a2ecf7654a4197e56374261c1c708b16365                         0.2s</span><br><span class="line"> =&gt; [internal] load .dockerignore                                                                                                                                                 0.0s</span><br><span class="line"> =&gt; =&gt; transferring context: 65B                                                                                                                                                  0.0s</span><br><span class="line"> =&gt; [ 1/10] FROM registry.k8s.io/ingress-nginx/nginx-1.25:v0.0.12@sha256:2d471b3a34dc43d10c3f3d7f2a6e8a2ecf7654a4197e56374261c1c708b16365                                         0.0s</span><br><span class="line"> =&gt; [internal] load build context                                                                                                                                                 0.6s</span><br><span class="line"> =&gt; =&gt; transferring context: 60.78MB                                                                                                                                              0.6s</span><br><span class="line"> =&gt; CACHED [ 2/10] WORKDIR  /etc/nginx                                                                                                                                            0.0s</span><br><span class="line"> =&gt; [ 3/10] RUN apk update   &amp;&amp; apk upgrade   &amp;&amp; apk add --no-cache     diffutils   &amp;&amp; <span class="built_in">rm</span> -rf /var/cache/apk/*                                                                    3.6s</span><br><span class="line"> =&gt; [ 4/10] COPY --<span class="built_in">chown</span>=www-data:www-data etc /etc                                                                                                                               0.2s</span><br><span class="line"> =&gt; [ 5/10] COPY --<span class="built_in">chown</span>=www-data:www-data bin/amd64/dbg /                                                                                                                        0.2s</span><br><span class="line"> =&gt; [ 6/10] COPY --<span class="built_in">chown</span>=www-data:www-data bin/amd64/nginx-ingress-controller /                                                                                                   0.3s</span><br><span class="line"> =&gt; [ 7/10] COPY --<span class="built_in">chown</span>=www-data:www-data bin/amd64/wait-shutdown /                                                                                                              0.1s</span><br><span class="line"> =&gt; [ 8/10] RUN bash -xeu -c <span class="string">&#x27;   writeDirs=(     /etc/ingress-controller/ssl     /etc/ingress-controller/auth     /etc/ingress-controller/geoip     /etc/ingress-controller/tele  0.4s</span></span><br><span class="line"><span class="string"> =&gt; [ 9/10] RUN apk add --no-cache libcap   &amp;&amp; setcap    cap_net_bind_service=+ep /nginx-ingress-controller   &amp;&amp; setcap -v cap_net_bind_service=+ep /nginx-ingress-controller     1.5s</span></span><br><span class="line"><span class="string"> =&gt; [10/10] RUN  ln -sf /dev/stdout /var/log/nginx/access.log   &amp;&amp; ln -sf /dev/stderr /var/log/nginx/error.log                                                                    0.4s</span></span><br><span class="line"><span class="string"> =&gt; exporting to image                                                                                                                                                            0.5s</span></span><br><span class="line"><span class="string"> =&gt; =&gt; exporting layers                                                                                                                                                           0.5s</span></span><br><span class="line"><span class="string"> =&gt; =&gt; writing image sha256:29cf5397c07c97a35cef1ed37b2124cf7bd721bb2dedcbd61d97ac283a7d23a1                                                                                      0.0s</span></span><br><span class="line"><span class="string"> =&gt; =&gt; naming to gcr.io/k8s-staging-ingress-nginx/controller:v1.10.4</span></span><br></pre></td></tr></table></figure>
+<p>8、推镜像</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker tag gcr.io/k8s-staging-ingress-nginx/controller:v1.10.4 registry.cn-hangzhou.aliyuncs.com/zmquan/nginx:v1.10.4</span><br><span class="line"></span><br><span class="line">$ docker push registry.cn-hangzhou.aliyuncs.com/zmquan/nginx:v1.10.4</span><br></pre></td></tr></table></figure>
+<p>编译: 参考这个大佬的<a target="_blank" rel="noopener" href="https://www.59izt.com/2023/12/26/%E4%BF%A1%E5%88%9B%E7%8E%AF%E5%A2%83/22-Arm64-%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91-ingress-nginx/">文档</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/k8s/" rel="tag"># k8s</a>
+              <a href="/tags/nginx-ingress-controller/" rel="tag"># nginx-ingress-controller</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/07/27/orangePiInstallK8s/" rel="prev" title="OrangePi 安装k8s">
+      <i class="fa fa-chevron-left"></i> OrangePi 安装k8s
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/09/03/LetSEncrypt/" rel="next" title="Let’s Encrypt 签发ECC证书">
+      Let’s Encrypt 签发ECC证书 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E7%8E%B0%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.</span> <span class="nav-text">复现步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%8E%B0%E6%9C%89%E7%8A%B6%E6%80%81"><span class="nav-number">4.</span> <span class="nav-text">检查现有状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%A4%8D%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">问题复现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E5%8E%9F%E5%9B%A0%EF%BC%9A"><span class="nav-number">6.</span> <span class="nav-text">初步原因：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3"><span class="nav-number">7.</span> <span class="nav-text">怎么解决</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8B%93%E5%B1%95"><span class="nav-number">8.</span> <span class="nav-text">拓展</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%86%E5%A4%87"><span class="nav-number">8.1.</span> <span class="nav-text">准备</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91"><span class="nav-number">8.2.</span> <span class="nav-text">编译</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="zmq"
+      src="/images/tx.jpg">
+  <p class="site-author-name" itemprop="name">zmq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zmquan" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zmquan" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zmq</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">闽ICP备2021010566号-1 </a>
+  </div>
+
+ <a target="_blank" rel="noopener" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> 
+   <img src="https://www.zmq100.cn/images/又拍云_logo5.png" border="0" width="50" height="25"> 
+</a>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 8.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.zmq100.cn","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="docker多平台构建像参考文档: https:&#x2F;&#x2F;docs.docker.com&#x2F;build&#x2F;building&#x2F;multi-platform&#x2F; 安装docker 一键安装 1$ sudo curl -fsSL https:&#x2F;&#x2F;get.docker.com | bash -s docker --mirror Aliyun 二进制安装docker https:&#x2F;&#x2F;download.docker.co">
+<meta property="og:type" content="article">
+<meta property="og:title" content="docker多平台构建">
+<meta property="og:url" content="https://www.zmq100.cn/2023/12/10/dockerMulti-platformBuild/index.html">
+<meta property="og:site_name" content="Zmq&#39;s Blog">
+<meta property="og:description" content="docker多平台构建像参考文档: https:&#x2F;&#x2F;docs.docker.com&#x2F;build&#x2F;building&#x2F;multi-platform&#x2F; 安装docker 一键安装 1$ sudo curl -fsSL https:&#x2F;&#x2F;get.docker.com | bash -s docker --mirror Aliyun 二进制安装docker https:&#x2F;&#x2F;download.docker.co">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-12-10T19:15:00.000Z">
+<meta property="article:modified_time" content="2025-12-18T06:48:21.000Z">
+<meta property="article:author" content="zmq">
+<meta property="article:tag" content="buildx">
+<meta property="article:tag" content="docker">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.zmq100.cn/2023/12/10/dockerMulti-platformBuild/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>docker多平台构建 | Zmq's Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a81325a5a7afff52c3400dbde0eee2d6";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Zmq's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.zmq100.cn/2023/12/10/dockerMulti-platformBuild/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/tx.jpg">
+      <meta itemprop="name" content="zmq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zmq's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          docker多平台构建
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-12-10 19:15:00" itemprop="dateCreated datePublished" datetime="2023-12-10T19:15:00+00:00">2023-12-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-12-18 06:48:21" itemprop="dateModified" datetime="2025-12-18T06:48:21+00:00">2025-12-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3/" itemprop="url" rel="index"><span itemprop="name">技术文档</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>docker多平台构建像参考文档:<br>
+<a target="_blank" rel="noopener" href="https://docs.docker.com/build/building/multi-platform/">https://docs.docker.com/build/building/multi-platform/</a></p>
+<h2 id="安装docker">安装docker</h2>
+<h3 id="一键安装">一键安装</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun</span><br></pre></td></tr></table></figure>
+<h3 id="二进制安装docker">二进制安装docker</h3>
+<p><a target="_blank" rel="noopener" href="https://download.docker.com/linux/static/stable/">https://download.docker.com/linux/static/stable/</a><br>
+<a target="_blank" rel="noopener" href="https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz">https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz</a></p>
+<h4 id="docker-安装">docker 安装</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ wget https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz</span><br><span class="line">$ tar zxvf docker-24.0.7.tgz</span><br><span class="line">docker/</span><br><span class="line">docker/docker-init</span><br><span class="line">docker/containerd-shim-runc-v2</span><br><span class="line">docker/ctr</span><br><span class="line">docker/docker-proxy</span><br><span class="line">docker/dockerd</span><br><span class="line">docker/docker</span><br><span class="line">docker/containerd</span><br><span class="line">docker/runc</span><br><span class="line">$ <span class="built_in">mv</span>  docker/* /usr/bin</span><br><span class="line"></span><br><span class="line">$ wget -O /usr/lib/systemd/system/docker.service  \</span><br><span class="line">    https://raw.githubusercontent.com/docker/packaging/main/pkg/docker-engine/common/systemd/docker.service</span><br><span class="line"><span class="comment"># 删除 Requires=docker.socket containerd.service</span></span><br><span class="line"><span class="comment"># 替换 ExecStart=/usr/bin/dockerd --exec-opt native.cgroupdriver=systemd</span></span><br><span class="line"></span><br><span class="line">$ systemctl daemon-reload</span><br><span class="line">$ systemctl <span class="built_in">enable</span> docker</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<h4 id="buildx安装">buildx安装</h4>
+<p><a target="_blank" rel="noopener" href="https://github.com/docker/buildx/releases">https://github.com/docker/buildx/releases</a></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">mkdir</span> -p ~/.docker/cli-plugins</span><br><span class="line">$ wget -O ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.12.0/buildx-v0.12.0.linux-amd64</span><br><span class="line">$ <span class="built_in">chmod</span> +x ~/.docker/cli-plugins/docker-buildx</span><br></pre></td></tr></table></figure>
+<h3 id="yum-安装docker">yum 安装docker</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">$ sudo wget -O /etc/yum.repos.d/docker-ce.repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo</span><br><span class="line"></span><br><span class="line">$ sudo yum -y install docker-ce</span><br><span class="line"></span><br><span class="line">yum list docker-ce --showduplicates|grep <span class="string">&quot;^doc&quot;</span>|<span class="built_in">sort</span> -r</span><br><span class="line">docker-ce.aarch64           3:24.0.7-1.el7                     @docker-ce-stable</span><br><span class="line">docker-ce.aarch64           3:24.0.0-1.el7                     docker-ce-stable</span><br><span class="line">docker-ce.aarch64           3:23.0.6-1.el7                     docker-ce-stable</span><br><span class="line">docker-ce.aarch64           3:23.0.0-1.el7                     docker-ce-stable</span><br><span class="line">docker-ce.aarch64           3:20.10.23-3.el7                   docker-ce-stable</span><br><span class="line">docker-ce.aarch64           3:20.10.0-3.el7                    docker-ce-stable</span><br><span class="line">docker-ce.aarch64           3:19.03.9-3.el7                    docker-ce-stable</span><br><span class="line">docker-ce.aarch64           3:19.03.5-3.el7                    docker-ce-stable</span><br><span class="line"></span><br><span class="line">$ yum -y install docker-ce-24.0.7-1.el7  docker-ce-cli-24.0.7-1.el7 docker-ce-rootless-extras-24.0.7-1.el7</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$ sudo <span class="built_in">mkdir</span> -p /etc/docker</span><br><span class="line">$ sudo <span class="built_in">tee</span> /etc/docker/daemon.json &lt;&lt;-<span class="string">&#x27;EOF&#x27;</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;registry-mirrors&quot;</span>: [<span class="string">&quot;https://l0zsxxuv.mirror.aliyuncs.com&quot;</span>]</span><br><span class="line">&#125;</span><br><span class="line">EOF</span><br><span class="line">sudo systemctl daemon-reload</span><br><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
+<h2 id="多架构构建">多架构构建</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br></pre></td><td class="code"><pre><span class="line">$ sudo docker run --<span class="built_in">rm</span> --privileged tonistiigi/binfmt:latest --install all</span><br><span class="line"><span class="comment"># Unable to find image &#x27;tonistiigi/binfmt:latest&#x27; locally</span></span><br><span class="line"><span class="comment"># latest: Pulling from tonistiigi/binfmt</span></span><br><span class="line"><span class="comment"># 66903ceeef2e: Pull complete</span></span><br><span class="line"><span class="comment"># 828e5112f0ea: Pull complete</span></span><br><span class="line"><span class="comment"># latest: Pulling from tonistiigi/binfmt</span></span><br><span class="line"><span class="comment"># 6dda554f4baf: Pull complete</span></span><br><span class="line"><span class="comment"># 2b0720d7a501: Pull complete</span></span><br><span class="line"><span class="comment"># Digest: sha256:66e11bea77a5ea9d6f0fe79b57cd2b189b5d15b93a2bdb925be22949232e4e55</span></span><br><span class="line"><span class="comment"># Status: Downloaded newer image for tonistiigi/binfmt:latest</span></span><br><span class="line"><span class="comment"># installing: amd64 OK</span></span><br><span class="line"><span class="comment"># installing: mips64le OK</span></span><br><span class="line"><span class="comment"># installing: mips64 OK</span></span><br><span class="line"><span class="comment"># installing: arm OK</span></span><br><span class="line"><span class="comment"># installing: s390x OK</span></span><br><span class="line"><span class="comment"># installing: ppc64le OK</span></span><br><span class="line"><span class="comment"># installing: riscv64 OK</span></span><br><span class="line"><span class="comment"># installing: 386 OK</span></span><br><span class="line"><span class="comment"># &#123;</span></span><br><span class="line"><span class="comment">#   &quot;supported&quot;: [</span></span><br><span class="line"><span class="comment">#     &quot;linux/arm64&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/amd64&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/riscv64&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/ppc64le&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/s390x&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/386&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/mips64le&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/mips64&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/arm/v7&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;linux/arm/v6&quot;</span></span><br><span class="line"><span class="comment">#   ],</span></span><br><span class="line"><span class="comment">#   &quot;emulators&quot;: [</span></span><br><span class="line"><span class="comment">#     &quot;qemu-arm&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;qemu-i386&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;qemu-mips64&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;qemu-mips64el&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;qemu-ppc64le&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;qemu-riscv64&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;qemu-s390x&quot;,</span></span><br><span class="line"><span class="comment">#     &quot;qemu-x86_64&quot;</span></span><br><span class="line"><span class="comment">#   ]</span></span><br><span class="line"><span class="comment"># &#125;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$ docker buildx create --name mult-arch--busybox --driver docker-container  --use</span><br><span class="line">mult-arch--busybox</span><br><span class="line"></span><br><span class="line">$ docker buildx inspect --bootstrap --builder mult-arch--busybox</span><br><span class="line"><span class="comment"># Name:          mult-arch--busybox</span></span><br><span class="line"><span class="comment"># Driver:        docker-container</span></span><br><span class="line"><span class="comment"># Last Activity: 2023-12-10 11:02:36 +0000 UTC</span></span><br><span class="line"><span class="comment"># </span></span><br><span class="line"><span class="comment"># Nodes:</span></span><br><span class="line"><span class="comment"># Name:      mult-arch--busybox0</span></span><br><span class="line"><span class="comment"># Endpoint:  unix:///var/run/docker.sock</span></span><br><span class="line"><span class="comment"># Status:    running</span></span><br><span class="line"><span class="comment"># Buildkit:  v0.9.3</span></span><br><span class="line"><span class="comment"># Platforms: linux/arm64, linux/amd64, linux/riscv64, linux/ppc64le, linux/s390x, linux/386, linux/mips64le, linux/mips64, linux/arm/v7, linux/arm/v6</span></span><br><span class="line"><span class="comment"># Labels:</span></span><br><span class="line"><span class="comment">#  org.mobyproject.buildkit.worker.executor:    oci</span></span><br><span class="line"><span class="comment">#  org.mobyproject.buildkit.worker.hostname:    35b6d23215ac</span></span><br><span class="line"><span class="comment">#  org.mobyproject.buildkit.worker.snapshotter: overlayfs</span></span><br><span class="line"><span class="comment"># GC Policy rule#0:</span></span><br><span class="line"><span class="comment">#  All:           false</span></span><br><span class="line"><span class="comment">#  Filters:       type==source.local,type==exec.cachemount,type==source.git.checkout</span></span><br><span class="line"><span class="comment">#  Keep Duration: 48h0m0s</span></span><br><span class="line"><span class="comment">#  Keep Bytes:    488.3MiB</span></span><br><span class="line"><span class="comment"># GC Policy rule#1:</span></span><br><span class="line"><span class="comment">#  All:           false</span></span><br><span class="line"><span class="comment">#  Keep Duration: 1440h0m0s</span></span><br><span class="line"><span class="comment">#  Keep Bytes:    9.313GiB</span></span><br><span class="line"><span class="comment"># GC Policy rule#2:</span></span><br><span class="line"><span class="comment">#  All:        false</span></span><br><span class="line"><span class="comment">#  Keep Bytes: 9.313GiB</span></span><br><span class="line"><span class="comment"># GC Policy rule#3:</span></span><br><span class="line"><span class="comment">#  All:        true</span></span><br><span class="line"><span class="comment">#  Keep Bytes: 9.313GiB</span></span><br><span class="line"></span><br><span class="line">$ <span class="built_in">cat</span> &lt;&lt;<span class="string">EOF &gt; Dockerfile</span></span><br><span class="line"><span class="string">FROM busybox:latest</span></span><br><span class="line"><span class="string">CMD sleep inf</span></span><br><span class="line"><span class="string">EOF</span></span><br><span class="line">$ docker login ghcr.io</span><br><span class="line"></span><br><span class="line">$ docker buildx build  --platform linux/amd64,linux/arm64 --tag ghcr.io/zmquan/busybox:mult-arch  --push  . </span><br><span class="line"><span class="comment">#[+] Building 16.1s (10/10) FINISHED                                                                                 docker-container:mult-arch--busybox</span></span><br><span class="line"><span class="comment"># =&gt; [internal] load build definition from Dockerfile                                                                                               0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; transferring dockerfile: 71B                                                                                                                0.0s</span></span><br><span class="line"><span class="comment"># =&gt; [internal] load .dockerignore                                                                                                                  0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; transferring context: 2B                                                                                                                    0.0s</span></span><br><span class="line"><span class="comment"># =&gt; [linux/arm64 internal] load metadata for docker.io/library/busybox:latest                                                                      4.2s</span></span><br><span class="line"><span class="comment"># =&gt; [linux/amd64 internal] load metadata for docker.io/library/busybox:latest                                                                      3.8s</span></span><br><span class="line"><span class="comment"># =&gt; [linux/amd64 1/1] FROM docker.io/library/busybox:latest@sha256:1ceb872bcc68a8fcd34c97952658b58086affdcb604c90c1dee2735bde5edc2f                1.9s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; resolve docker.io/library/busybox:latest@sha256:1ceb872bcc68a8fcd34c97952658b58086affdcb604c90c1dee2735bde5edc2f                            0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; sha256:6672f60b6ba813a11925e795a0742f6c4c6313b64db544f60f1077619a616967 2.22MB / 2.22MB                                                     1.8s</span></span><br><span class="line"><span class="comment"># =&gt; [linux/arm64 1/1] FROM docker.io/library/busybox:latest@sha256:1ceb872bcc68a8fcd34c97952658b58086affdcb604c90c1dee2735bde5edc2f                2.1s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; resolve docker.io/library/busybox:latest@sha256:1ceb872bcc68a8fcd34c97952658b58086affdcb604c90c1dee2735bde5edc2f                            0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; sha256:1c06b6731239f8a4e7fb37959da1482059579b4f74c6362bc06aa5bdb0e563a3 1.92MB / 1.92MB                                                     2.0s</span></span><br><span class="line"><span class="comment"># =&gt; exporting to image                                                                                                                            11.7s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; exporting layers                                                                                                                            0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; exporting manifest sha256:97e6eef54eae9d4c76042d647e4cbc9baac6fc59c169a3ebbb4cee111d04ca01                                                  0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; exporting config sha256:852b1ac5c7e68c61241df24f52aa0e89e4bb13065f21b79827d239734f05c5a0                                                    0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; exporting manifest sha256:b3c8adde53390f44bba8c7f885f7c8369cba27e9a2c9ddd8bd5da4212c00d78f                                                  0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; exporting config sha256:12a48fd5a0f0faa92adde3cb73cab573750f209c5d3d6395e5bb3c4b6fa7c26a                                                    0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; exporting manifest list sha256:1a1169b0e572401588d4a2ab8a847ae07831cceb99deedc7733bf4b47a566025                                             0.0s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; pushing layers                                                                                                                              8.7s</span></span><br><span class="line"><span class="comment"># =&gt; =&gt; pushing manifest for ghcr.io/zmquan/busybox:mult-arch@sha256:1a1169b0e572401588d4a2ab8a847ae07831cceb99deedc7733bf4b47a566025               2.9s</span></span><br><span class="line"><span class="comment"># =&gt; [auth] zmquan/busybox:pull,push token for ghcr.io                                                                                              0.0s</span></span><br><span class="line"><span class="comment"># =&gt; [auth] zmquan/busybox:pull,push token for ghcr.io                                                                                              0.0s</span></span><br><span class="line"><span class="comment"># =&gt; [auth] zmquan/busybox:pull,push token for ghcr.io                                                                                              0.0s</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/buildx/" rel="tag"># buildx</a>
+              <a href="/tags/docker/" rel="tag"># docker</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/12/09/containerdInstall/" rel="prev" title="containerd 安装">
+      <i class="fa fa-chevron-left"></i> containerd 安装
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/01/08/kubectlAutocompletion/" rel="next" title="kubectl 自动补全">
+      kubectl 自动补全 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85docker"><span class="nav-number">1.</span> <span class="nav-text">安装docker</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E9%94%AE%E5%AE%89%E8%A3%85"><span class="nav-number">1.1.</span> <span class="nav-text">一键安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AE%89%E8%A3%85docker"><span class="nav-number">1.2.</span> <span class="nav-text">二进制安装docker</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#docker-%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.1.</span> <span class="nav-text">docker 安装</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#buildx%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.2.</span> <span class="nav-text">buildx安装</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yum-%E5%AE%89%E8%A3%85docker"><span class="nav-number">1.3.</span> <span class="nav-text">yum 安装docker</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E6%9E%B6%E6%9E%84%E6%9E%84%E5%BB%BA"><span class="nav-number">2.</span> <span class="nav-text">多架构构建</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="zmq"
+      src="/images/tx.jpg">
+  <p class="site-author-name" itemprop="name">zmq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zmquan" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zmquan" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zmq</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">闽ICP备2021010566号-1 </a>
+  </div>
+
+ <a target="_blank" rel="noopener" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> 
+   <img src="https://www.zmq100.cn/images/又拍云_logo5.png" border="0" width="50" height="25"> 
+</a>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

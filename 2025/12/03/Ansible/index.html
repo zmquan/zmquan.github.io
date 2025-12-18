@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 8.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.zmq100.cn","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="安装 yum 源安装 123456789101112131415161718192021222324252627282930313233343536# yum 安装ansible$ yum -y install epel-release $ yum -y install ansible...Dependencies resolved.&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ansible安装介绍">
+<meta property="og:url" content="https://www.zmq100.cn/2025/12/03/Ansible/index.html">
+<meta property="og:site_name" content="Zmq&#39;s Blog">
+<meta property="og:description" content="安装 yum 源安装 123456789101112131415161718192021222324252627282930313233343536# yum 安装ansible$ yum -y install epel-release $ yum -y install ansible...Dependencies resolved.&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-03T21:26:53.000Z">
+<meta property="article:modified_time" content="2025-12-18T06:48:21.000Z">
+<meta property="article:author" content="zmq">
+<meta property="article:tag" content="ansible">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.zmq100.cn/2025/12/03/Ansible/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ansible安装介绍 | Zmq's Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a81325a5a7afff52c3400dbde0eee2d6";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Zmq's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.zmq100.cn/2025/12/03/Ansible/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/tx.jpg">
+      <meta itemprop="name" content="zmq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zmq's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ansible安装介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-12-03 21:26:53" itemprop="dateCreated datePublished" datetime="2025-12-03T21:26:53+00:00">2025-12-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-12-18 06:48:21" itemprop="dateModified" datetime="2025-12-18T06:48:21+00:00">2025-12-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/ansible/" itemprop="url" rel="index"><span itemprop="name">ansible</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="安装">安装</h2>
+<h3 id="yum-源安装">yum 源安装</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># yum 安装ansible</span></span><br><span class="line">$ yum -y install epel-release </span><br><span class="line">$ yum -y install ansible</span><br><span class="line">...</span><br><span class="line">Dependencies resolved.</span><br><span class="line">======================================================================================================================================================================================</span><br><span class="line"> Package                                            Architecture                          Version                                       Repository                               Size</span><br><span class="line">======================================================================================================================================================================================</span><br><span class="line">Installing:</span><br><span class="line"> ansible                                            noarch                                1:7.7.0-1.el9                                 epel                                     34 M</span><br><span class="line">Installing dependencies:</span><br><span class="line"> ansible-core                                       aarch64                               1:2.14.18-2.el9                               appstream                               2.6 M</span><br><span class="line"> git-core                                           aarch64                               2.47.3-1.el9                                  appstream                               4.8 M</span><br><span class="line"> less                                               aarch64                               590-6.el9                                     baseos                                  161 k</span><br><span class="line"> python3-cffi                                       aarch64                               1.14.5-5.el9                                  baseos                                  257 k</span><br><span class="line"> python3-cryptography                               aarch64                               36.0.1-5.el9                                  baseos                                  1.2 M</span><br><span class="line"> python3-packaging                                  noarch                                20.9-5.el9                                    appstream                                77 k</span><br><span class="line"> python3-ply                                        noarch                                3.11-14.el9                                   baseos                                  106 k</span><br><span class="line"> python3-pycparser                                  noarch                                2.20-6.el9                                    baseos                                  135 k</span><br><span class="line"> python3-pyparsing                                  noarch                                2.4.7-9.el9                                   baseos                                  150 k</span><br><span class="line"> python3-pyyaml                                     aarch64                               5.4.1-6.el9                                   baseos                                  199 k</span><br><span class="line"> python3-resolvelib                                 noarch                                0.5.4-5.el9                                   appstream                                34 k</span><br><span class="line"> python3-setuptools                                 noarch                                53.0.0-15.el9                                 baseos                                  936 k</span><br><span class="line"> sshpass                                            aarch64                               1.09-4.el9                                    appstream                                27 k</span><br><span class="line">...</span><br><span class="line"><span class="comment"># 确认安装</span></span><br><span class="line">$ ansible --version</span><br><span class="line">ansible [core 2.14.18]</span><br><span class="line">  config file = /etc/ansible/ansible.cfg</span><br><span class="line">  configured module search path = [<span class="string">&#x27;/root/.ansible/plugins/modules&#x27;</span>, <span class="string">&#x27;/usr/share/ansible/plugins/modules&#x27;</span>]</span><br><span class="line">  ansible python module location = /usr/lib/python3.9/site-packages/ansible</span><br><span class="line">  ansible collection location = /root/.ansible/collections:/usr/share/ansible/collections</span><br><span class="line">  executable location = /usr/bin/ansible</span><br><span class="line">  python version = 3.9.23 (main, Aug 19 2025, 00:00:00) [GCC 11.5.0 20240719 (Red Hat 11.5.0-11)] (/usr/bin/python3)</span><br><span class="line">  jinja version = 3.1.2</span><br><span class="line">  libyaml = True</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<h3 id="另外的安装方式：">另外的安装方式：</h3>
+<ul>
+<li>pipx 和pip安装：参考<a target="_blank" rel="noopener" href="https://docs.ansible.com/projects/ansible/latest/installation_guide/index.html">https://docs.ansible.com/projects/ansible/latest/installation_guide/index.html</a></li>
+<li>源码安装：<a target="_blank" rel="noopener" href="https://github.com/ansible/ansible">https://github.com/ansible/ansible</a></li>
+</ul>
+<h2 id="ansible使用">ansible使用</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 指定哪些主机，通过什么模块（shell/copy/ping等）, 执行什么命令</span></span><br><span class="line">$ ansible <span class="variable">$host_pattern</span> -m <span class="variable">$module_name</span> -a <span class="variable">$args</span></span><br><span class="line">-m MODULE_NAME, --module-name MODULE_NAME</span><br><span class="line">-a MODULE_ARGS, --args MODULE_ARGS</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 可以提前做好各个机器的免密，也可以在执行的过程中，手动指定用户名和密钥文件</span></span><br><span class="line"><span class="comment"># 比如： -u root --private-key=~/.ssh/id_rsa</span></span><br><span class="line">-u REMOTE_USER, --user REMOTE_USER</span><br><span class="line">--private-key PRIVATE_KEY_FILE, --key-file PRIVATE_KEY_FILE</span><br></pre></td></tr></table></figure>
+<h3 id="主机清单文件">主机清单文件</h3>
+<p>本案例以<code>/etc/ansible/hosts</code> 为例</p>
+<ul>
+<li>默认配置文件：/etc/ansible/hosts</li>
+<li>通过命令指定：-i INVENTORY, --inventory INVENTORY, --inventory-file INVENTORY /opt/hosts</li>
+<li>通过env指定：ANSIBLE_INVENTORY=/opt/hosts</li>
+</ul>
+<p>demo:</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[prod]</span><br><span class="line">192.168.139.61</span><br><span class="line"></span><br><span class="line">[dev]</span><br><span class="line">dev-[00:100].zmq100.cn</span><br><span class="line">dev.zmq100.cn</span><br><span class="line">192.168.0.3</span><br><span class="line">192.168.0.4</span><br></pre></td></tr></table></figure>
+<h3 id="ansible简单测试">ansible简单测试</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ping测试</span></span><br><span class="line">$ ansible prod -m ping </span><br><span class="line">192.168.139.61 | SUCCESS =&gt; &#123;</span><br><span class="line">    <span class="string">&quot;ansible_facts&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;discovered_interpreter_python&quot;</span>: <span class="string">&quot;/usr/bin/python3&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;changed&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">    <span class="string">&quot;ping&quot;</span>: <span class="string">&quot;pong&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行shell</span></span><br><span class="line">$ ansible prod -m shell -a <span class="string">&#x27;curl -s https://www.httpbin.org/status/418&#x27;</span></span><br><span class="line">192.168.139.61 | CHANGED | rc=0 &gt;&gt;</span><br><span class="line"></span><br><span class="line">    -=[ teapot ]=-</span><br><span class="line"></span><br><span class="line">       _...._</span><br><span class="line">     .<span class="string">&#x27;  _ _ `.</span></span><br><span class="line"><span class="string">    | .&quot;` ^ `&quot;. _,</span></span><br><span class="line"><span class="string">    \_;`&quot;---&quot;`|//</span></span><br><span class="line"><span class="string">      |       ;/</span></span><br><span class="line"><span class="string">      \_     _/</span></span><br><span class="line"><span class="string">        `&quot;&quot;&quot;`</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string"># 拷贝文件</span></span><br><span class="line"><span class="string">$ ansible prod -m copy -a &#x27;</span>src=./src.txt dest=/root backup=<span class="built_in">yes</span><span class="string">&#x27;</span></span><br><span class="line"><span class="string">192.168.139.61 | CHANGED =&gt; &#123;</span></span><br><span class="line"><span class="string">    &quot;ansible_facts&quot;: &#123;</span></span><br><span class="line"><span class="string">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;</span></span><br><span class="line"><span class="string">    &#125;,</span></span><br><span class="line"><span class="string">    &quot;changed&quot;: true,</span></span><br><span class="line"><span class="string">    &quot;checksum&quot;: &quot;da39a3ee5e6b4b0d3255bfef95601890afd80709&quot;,</span></span><br><span class="line"><span class="string">    &quot;dest&quot;: &quot;/root/src.txt&quot;,</span></span><br><span class="line"><span class="string">    &quot;gid&quot;: 0,</span></span><br><span class="line"><span class="string">    &quot;group&quot;: &quot;root&quot;,</span></span><br><span class="line"><span class="string">    &quot;md5sum&quot;: &quot;d41d8cd98f00b204e9800998ecf8427e&quot;,</span></span><br><span class="line"><span class="string">    &quot;mode&quot;: &quot;0644&quot;,</span></span><br><span class="line"><span class="string">    &quot;owner&quot;: &quot;root&quot;,</span></span><br><span class="line"><span class="string">    &quot;size&quot;: 0,</span></span><br><span class="line"><span class="string">    &quot;src&quot;: &quot;/root/.ansible/tmp/ansible-tmp-1764766526.6254685-1030-4635454059232/source&quot;,</span></span><br><span class="line"><span class="string">    &quot;state&quot;: &quot;file&quot;,</span></span><br><span class="line"><span class="string">    &quot;uid&quot;: 0</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<h2 id="ansible-playbook测试">ansible-playbook测试</h2>
+<p>查看GitHub社区</p>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://github.com/ansible/ansible-examples">https://github.com/ansible/ansible-examples</a></p>
+</blockquote>
+<ul>
+<li>查看支持的模块： ansible-doc -l
+<ul>
+<li>-l, --list            List available plugins.</li>
+</ul>
+</li>
+<li>查看模块用法：ansible-doc -v ping
+<ul>
+<li>-v, --verbose         Causes Ansible to print more debug messages.</li>
+</ul>
+</li>
+</ul>
+<h3 id="yaml清单">yaml清单</h3>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">copy_test</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">all</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">copy_file</span></span><br><span class="line">      <span class="attr">copy:</span></span><br><span class="line">        <span class="attr">src:</span> <span class="string">/root/src.txt</span></span><br><span class="line">        <span class="attr">dest:</span> <span class="string">/root</span></span><br><span class="line">        <span class="attr">owner:</span> <span class="string">root</span></span><br><span class="line">        <span class="attr">group:</span> <span class="string">root</span></span><br><span class="line">        <span class="attr">mode:</span> <span class="string">&#x27;0644&#x27;</span></span><br></pre></td></tr></table></figure>
+<h3 id="执行测试">执行测试</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ ansible-playbook -C a.yaml</span><br><span class="line">  -C, --check           don<span class="string">&#x27;t make any changes;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">$ ansible-playbook  a.yaml</span></span><br><span class="line"><span class="string">PLAY [copy_test] **********************************</span></span><br><span class="line"><span class="string">TASK [Gathering Facts] ****************************</span></span><br><span class="line"><span class="string">ok: [192.168.139.61]</span></span><br><span class="line"><span class="string">TASK [copy_file] **********************************</span></span><br><span class="line"><span class="string">ok: [192.168.139.61]</span></span><br><span class="line"><span class="string">PLAY RECAP ****************************************</span></span><br><span class="line"><span class="string">192.168.139.61             : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ansible/" rel="tag"># ansible</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/09/11/PromAndVmagent/" rel="prev" title="Prometheus 和victoriametrics 简单介绍">
+      <i class="fa fa-chevron-left"></i> Prometheus 和victoriametrics 简单介绍
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">1.</span> <span class="nav-text">安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#yum-%E6%BA%90%E5%AE%89%E8%A3%85"><span class="nav-number">1.1.</span> <span class="nav-text">yum 源安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%A6%E5%A4%96%E7%9A%84%E5%AE%89%E8%A3%85%E6%96%B9%E5%BC%8F%EF%BC%9A"><span class="nav-number">1.2.</span> <span class="nav-text">另外的安装方式：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ansible%E4%BD%BF%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">ansible使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E6%9C%BA%E6%B8%85%E5%8D%95%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.</span> <span class="nav-text">主机清单文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ansible%E7%AE%80%E5%8D%95%E6%B5%8B%E8%AF%95"><span class="nav-number">2.2.</span> <span class="nav-text">ansible简单测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ansible-playbook%E6%B5%8B%E8%AF%95"><span class="nav-number">3.</span> <span class="nav-text">ansible-playbook测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#yaml%E6%B8%85%E5%8D%95"><span class="nav-number">3.1.</span> <span class="nav-text">yaml清单</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E6%B5%8B%E8%AF%95"><span class="nav-number">3.2.</span> <span class="nav-text">执行测试</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="zmq"
+      src="/images/tx.jpg">
+  <p class="site-author-name" itemprop="name">zmq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zmquan" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zmquan" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zmq</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">闽ICP备2021010566号-1 </a>
+  </div>
+
+ <a target="_blank" rel="noopener" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral"> 
+   <img src="https://www.zmq100.cn/images/又拍云_logo5.png" border="0" width="50" height="25"> 
+</a>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
